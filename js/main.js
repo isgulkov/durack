@@ -10,7 +10,7 @@ var CARD_HEIGHT = 100;
 var cardSpritesImg = new Image(); // TODO: replace data uri with url/onload
 cardSpritesImg.src = 'img/cards.gif';
 
-var getCardOffset = function(card) {
+var getCardSpriteOffset = function(card) {
     if(card === 'back') {
         return {
             x: 5 * CARD_WIDTH,
@@ -56,7 +56,7 @@ var drawCardsOnTable = function(tableStacks) {
 var drawCard = function(card, x, y) {
     this.save();
 
-    var offset = getCardOffset(card);
+    var offset = getCardSpriteOffset(card);
 
     this.drawImage(cardSpritesImg, offset.x, offset.y, CARD_WIDTH, CARD_HEIGHT, x, y, CARD_WIDTH, CARD_HEIGHT);
 
