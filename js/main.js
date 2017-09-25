@@ -12,12 +12,19 @@ cardSpriteImg.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA7YAAAGICAMAA
 
 var getCardOffset = function(card) {
     var y = 2 + 98 * ['clubs', 'spades', 'hearts', 'diamonds'].indexOf(card.suit);
-
     var x = 2 + 73 * ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'].indexOf(card.value);
 
     return {
         x: x,
         y: y
+    }
+};
+
+var drawPlayersHand = function(playerCards) {
+    var totalOffset = (this.canvasWidth - CARD_WIDTH * playerCards.length - 10 * (playerCards.length - 1)) / 2;
+
+    for(var i = 0; i < playerCards.length; i++) {
+        this.drawCard(playerCards[i], totalOffset + (CARD_WIDTH + 10) * i, this.canvasHeight - CARD_HEIGHT - 50);
     }
 };
 
@@ -28,11 +35,12 @@ var drawCard = function(card, x, y) {
 
     this.drawImage(cardSpriteImg, offset.x, offset.y, CARD_WIDTH, CARD_HEIGHT, x, y, CARD_WIDTH, CARD_HEIGHT);
 
-    this.strokeStyle = '1px black';
-    this.strokeRect(x, y, CARD_WIDTH, CARD_HEIGHT);
+    this.strokeStyle = '#777';
+    this.lineWidth = 1;
+    this.strokeRect(x - 1, y - 1, CARD_WIDTH + 2, CARD_HEIGHT + 2);
 
     this.fillStyle = 'black';
-    this.fillText("Card " + card.suit + " " + card.value, x + 5, y + 50);
+    this.fillText(card.suit + ", " + card.value, x + 5, y + 50);
 
     this.restore();
 };
@@ -41,7 +49,11 @@ $(document).ready(function() {
     var canvas = document.getElementById('main_canvas');
     var ctx = canvas.getContext('2d');
 
+    ctx.canvasWidth = canvas.width;
+    ctx.canvasHeight = canvas.height;
+
     ctx.drawCard = drawCard;
+    ctx.drawPlayersHand = drawPlayersHand;
 
     var grad = ctx.createLinearGradient(0, 0, 0, 600);
 
@@ -53,10 +65,7 @@ $(document).ready(function() {
 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.drawCard({suit: 'spades', value: '10'}, 10, 10);
-    ctx.drawCard({suit: 'hearts', value: 'A'}, 100, 10);
-    ctx.drawCard({suit: 'clubs', value: 'Q'}, 200, 10);
-    ctx.drawCard({suit: 'clubs', value: '7'}, 300, 10);
-    ctx.drawCard({suit: 'hearts', value: '8'}, 400, 10);
-    ctx.drawCard({suit: 'diamonds', value: '8'}, 500, 10);
+    var playerCards = [{suit: 'spades', value: '10'}, {suit: 'hearts', value: 'A'}, {suit: 'clubs', value: 'Q'}, {suit: 'clubs', value: '7'}, {suit: 'hearts', value: '8'}, {suit: 'diamonds', value: '8'}];
+
+    ctx.drawPlayersHand(playerCards);
 });
