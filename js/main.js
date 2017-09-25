@@ -28,6 +28,23 @@ var drawPlayersHand = function(playerCards) {
     }
 };
 
+var drawCardsOnTable = function(tableStacks) {
+    var totalLeftOffset = (this.canvasWidth - CARD_WIDTH * tableStacks.length - 20 * (tableStacks.length - 1)) / 2;
+    var topOffset = 200;
+
+    for(var i = tableStacks.length - 1; i >= 0; i--) {
+        this.drawCard(tableStacks[i].top, totalLeftOffset + (CARD_WIDTH + 20) * i, topOffset);
+
+        if(tableStacks[i].bottom !== undefined) {
+            this.drawCard(
+                tableStacks[i].bottom,
+                totalLeftOffset + 5 + (CARD_WIDTH + 20) * i,
+                topOffset + CARD_HEIGHT / 2
+            );
+        }
+    }
+};
+
 var drawCard = function(card, x, y) {
     this.save();
 
@@ -54,6 +71,7 @@ $(document).ready(function() {
 
     ctx.drawCard = drawCard;
     ctx.drawPlayersHand = drawPlayersHand;
+    ctx.drawCardsOnTable = drawCardsOnTable;
 
     var grad = ctx.createLinearGradient(0, 0, 0, 600);
 
@@ -68,4 +86,23 @@ $(document).ready(function() {
     var playerCards = [{suit: 'spades', value: '10'}, {suit: 'hearts', value: 'A'}, {suit: 'clubs', value: 'Q'}, {suit: 'clubs', value: '7'}, {suit: 'hearts', value: '8'}, {suit: 'diamonds', value: '8'}];
 
     ctx.drawPlayersHand(playerCards);
+
+    var tableStacks = [
+        {
+            top: {suit: 'spades', value: '10'},
+            bottom: {suit: 'hearts', value: 'A'}
+        },
+        {
+            top: {suit: 'clubs', value: 'Q'},
+            bottom: {suit: 'clubs', value: '7'}
+        },
+        {
+            top: {suit: 'hearts', value: '8'}
+        },
+        {
+            top: {suit: 'diamonds', value: '8'}
+        }
+        ];
+
+    ctx.drawCardsOnTable(tableStacks);
 });
