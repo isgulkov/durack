@@ -62,16 +62,16 @@ var drawCard = function(card, x, y) {
     this.restore();
 };
 
+CanvasRenderingContext2D.prototype.drawCard = drawCard;
+CanvasRenderingContext2D.prototype.drawPlayersHand = drawPlayersHand;
+CanvasRenderingContext2D.prototype.drawCardsOnTable = drawCardsOnTable;
+
 $(document).ready(function() {
     var canvas = document.getElementById('main_canvas');
     var ctx = canvas.getContext('2d');
 
     ctx.canvasWidth = canvas.width;
     ctx.canvasHeight = canvas.height;
-
-    ctx.drawCard = drawCard;
-    ctx.drawPlayersHand = drawPlayersHand;
-    ctx.drawCardsOnTable = drawCardsOnTable;
 
     var grad = ctx.createLinearGradient(0, 0, 0, 600);
 
