@@ -57,10 +57,20 @@ var getOpponentHandCenters = (function() {
     };
 }());
 
-var drawCard = function(card, x, y) {
+var drawCard = function(card, x, y, horizontal) {
     var offset = getCardSpriteOffset(card);
 
+    if(horizontal) {
+        this.save();
+
+        this.rotate(Math.PI / 2);
+    }
+
     this.drawImage(cardSpritesImg, offset.x, offset.y, CARD_WIDTH, CARD_HEIGHT, x, y, CARD_WIDTH, CARD_HEIGHT);
+
+    if(horizontal) {
+        this.restore();
+    }
 };
 
 var drawPlayersHand = function(playerCards) {
@@ -132,10 +142,31 @@ var drawOpponentHands = function(opponentHands) {
     }
 };
 
+var drawLeftoverStack = function(stackSize, bottomCard) {
+    var additionalOffset = 2 * Math.max(0, stackSize - 15);
+
+    if(stackSize === 0) {
+        this.save();
+
+        this.globalCompositeOperation = 'darken';
+    }
+
+    this.drawCard(bottomCard, 50, 600 - CARD_HEIGHT - 25 - additionalOffset);
+
+    if(stackSize === 0) {
+        this.restore();
+    }
+
+    for(var i = stackSize - 1; i > 0; i--) {
+        this.drawCard('back', 508 + 2 * i - additionalOffset, -135, true);
+    }
+};
+
 CanvasRenderingContext2D.prototype.drawCard = drawCard;
 CanvasRenderingContext2D.prototype.drawPlayersHand = drawPlayersHand;
 CanvasRenderingContext2D.prototype.drawCardsOnTable = drawCardsOnTable;
 CanvasRenderingContext2D.prototype.drawOpponentHands = drawOpponentHands;
+CanvasRenderingContext2D.prototype.drawLeftoverStack = drawLeftoverStack;
 
 $(document).ready(function() {
     cardSpritesImg.addEventListener('load', function() {
@@ -192,5 +223,10 @@ $(document).ready(function() {
             {nickname: '1ll1l1ll1l1lll11', numCards: 10},
             {nickname: 'o priv', numCards: 18}
         ]);
+
+        ctx.drawLeftoverStack(2, {suit: 'hearts', value: 'A'});
+
+        // TODO: signify whose move is it
+        // TODO: draw played stack
     });
 });
