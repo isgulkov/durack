@@ -210,12 +210,23 @@ var drawLeftoverStack = function(stackSize, bottomCard) {
     }
 };
 
+var drawPlayedStack = function(stackSize) {
+    stackSize = Math.min(30, stackSize);
+
+    var cardSpacing = Math.min(10, 80 / stackSize);
+
+    for(var i = 0; i < stackSize; i++) {
+        this.drawCard('back', this.canvasWidth - CARD_WIDTH - 5 - cardSpacing * i, this.canvasHeight - CARD_HEIGHT + 10);
+    }
+};
+
 CanvasRenderingContext2D.prototype.drawBackground = drawBackground;
 CanvasRenderingContext2D.prototype.drawCard = drawCard;
 CanvasRenderingContext2D.prototype.drawPlayersHand = drawPlayersHand;
 CanvasRenderingContext2D.prototype.drawCardsOnTable = drawCardsOnTable;
 CanvasRenderingContext2D.prototype.drawOpponentHands = drawOpponentHands;
 CanvasRenderingContext2D.prototype.drawLeftoverStack = drawLeftoverStack;
+CanvasRenderingContext2D.prototype.drawPlayedStack = drawPlayedStack;
 
 $(document).ready(function() {
     cardSpritesImg.addEventListener('load', function() {
@@ -279,6 +290,6 @@ $(document).ready(function() {
 
         ctx.drawLeftoverStack(2, {suit: 'hearts', value: 'A'});
 
-        // TODO: draw played stack
+        ctx.drawPlayedStack(10);
     });
 });
