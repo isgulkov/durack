@@ -116,10 +116,16 @@ var drawCard = function(card, x, y, horizontal) {
 };
 
 var drawPlayersHand = function(playerCards) {
-    var totalOffset = (this.canvasWidth - CARD_WIDTH * playerCards.length - 10 * (playerCards.length - 1)) / 2;
+    var cardSpacing = Math.min(600 / playerCards.length, CARD_WIDTH + 10);
+
+    var handWidth = cardSpacing * (playerCards.length - 1) + CARD_WIDTH;
+
+    var totalLeftOffset = (this.canvasWidth - handWidth) / 2;
+
+    console.log(handWidth);
 
     for(var i = 0; i < playerCards.length; i++) {
-        this.drawCard(playerCards[i], totalOffset + (CARD_WIDTH + 10) * i, this.canvasHeight - CARD_HEIGHT - 50);
+        this.drawCard(playerCards[i], totalLeftOffset + cardSpacing * i, this.canvasHeight - CARD_HEIGHT - 50);
     }
 };
 
@@ -221,7 +227,26 @@ $(document).ready(function() {
 
         ctx.drawBackground({numPlayers: 6, opponentId: 1});
 
-        var playerCards = [{suit: 'spades', value: '10'}, {suit: 'hearts', value: 'A'}, {suit: 'clubs', value: 'Q'}, {suit: 'clubs', value: '7'}, {suit: 'hearts', value: '8'}, {suit: 'diamonds', value: '8'}];
+        var playerCards = [
+            {suit: 'spades', value: '10'},
+            {suit: 'hearts', value: 'A'},
+            {suit: 'clubs', value: 'Q'},
+            {suit: 'clubs', value: '7'},
+            {suit: 'hearts', value: '8'},
+            {suit: 'diamonds', value: '8'},
+            {suit: 'spades', value: '10'},
+            {suit: 'hearts', value: 'A'},
+            {suit: 'clubs', value: 'Q'},
+            {suit: 'clubs', value: '7'},
+            {suit: 'hearts', value: '8'},
+            {suit: 'diamonds', value: '8'},
+            {suit: 'spades', value: '10'},
+            {suit: 'hearts', value: 'A'},
+            {suit: 'clubs', value: 'Q'},
+            {suit: 'clubs', value: '7'},
+            {suit: 'hearts', value: '8'},
+            {suit: 'diamonds', value: '8'}
+        ];
 
         ctx.drawPlayersHand(playerCards);
 
@@ -254,7 +279,6 @@ $(document).ready(function() {
 
         ctx.drawLeftoverStack(2, {suit: 'hearts', value: 'A'});
 
-        // TODO: squeeze player's hand
         // TODO: draw played stack
     });
 });
