@@ -28,6 +28,35 @@ var getCardSpriteOffset = function(card) {
     }
 };
 
+var getOpponentHandCenters = (function() {
+    var allCenters = [
+        {x: 75, y: 325},
+        {x: 125, y: 150},
+        {x: 300, y: 75},
+        {x: 500, y: 75},
+        {x: 700, y: 75},
+        {x: 1000 - 125, y: 150},
+        {x: 1000 - 75, y: 325}
+    ];
+
+    return function(numPlayers) {
+        switch(numPlayers) {
+            case 2:
+                return [allCenters[3]];
+            case 3:
+                return [allCenters[1], allCenters[5]];
+            case 4:
+                return [allCenters[0], allCenters[3], allCenters[6]];
+            case 5:
+                return [allCenters[0], allCenters[2], allCenters[4], allCenters[6]];
+            case 6:
+                return [allCenters[0], allCenters[1], allCenters[3], allCenters[5], allCenters[6]];
+            default:
+                window.alert("shit");
+        }
+    };
+}());
+
 var drawPlayersHand = function(playerCards) {
     var totalOffset = (this.canvasWidth - CARD_WIDTH * playerCards.length - 10 * (playerCards.length - 1)) / 2;
 
@@ -114,5 +143,21 @@ $(document).ready(function() {
             ];
 
         ctx.drawCardsOnTable(tableStacks);
+
+        for(var n = 2; n <= 6; n++) {
+            var centers = getOpponentHandCenters(n);
+
+            for(var i = 0; i < centers.length; i++) {
+                ctx.fillStyle = ['red', 'blue', 'magenta', 'yellow', 'black'][n - 2];
+                ctx.globalAlpha = 0.2;
+                ctx.fillRect(centers[i].x - 25, centers[i].y - 25, 10 * n, 10 * n);
+
+                ctx.globalAlpha = 1;
+
+                ctx.fillStyle = 'black';
+                ctx.font = '24px serif';
+                ctx.fillText(n, centers[i].x + 10 * n, centers[i].y);
+            }
+        }
     });
 });
