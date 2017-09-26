@@ -30,13 +30,13 @@ var getCardSpriteOffset = function(card) {
 
 var getOpponentHandCenters = (function() {
     var allCenters = [
-        {x: 75, y: 325},
+        {x: 100, y: 325},
         {x: 125, y: 150},
         {x: 300, y: 75},
         {x: 500, y: 75},
         {x: 700, y: 75},
         {x: 1000 - 125, y: 150},
-        {x: 1000 - 75, y: 325}
+        {x: 1000 - 100, y: 325}
     ];
 
     return function(numPlayers) {
@@ -56,6 +56,12 @@ var getOpponentHandCenters = (function() {
         }
     };
 }());
+
+var drawCard = function(card, x, y) {
+    var offset = getCardSpriteOffset(card);
+
+    this.drawImage(cardSpritesImg, offset.x, offset.y, CARD_WIDTH, CARD_HEIGHT, x, y, CARD_WIDTH, CARD_HEIGHT);
+};
 
 var drawPlayersHand = function(playerCards) {
     var totalOffset = (this.canvasWidth - CARD_WIDTH * playerCards.length - 10 * (playerCards.length - 1)) / 2;
@@ -82,26 +88,54 @@ var drawCardsOnTable = function(tableStacks) {
     }
 };
 
-var drawCard = function(card, x, y) {
-    this.save();
+var drawOpponentHands = function(opponentHands) {
+    var opponentHandCenters = getOpponentHandCenters(opponentHands.length + 1);
 
-    var offset = getCardSpriteOffset(card);
+    for(var i = 0; i < opponentHands.length; i++) {
+        var center = opponentHandCenters[i];
+        var handSize = opponentHands[i].numCards;
 
-    this.drawImage(cardSpritesImg, offset.x, offset.y, CARD_WIDTH, CARD_HEIGHT, x, y, CARD_WIDTH, CARD_HEIGHT);
+        var cardSpacing = Math.min(10, 100 / handSize);
 
-    // this.strokeStyle = '#777';
-    // this.lineWidth = 1;
-    // this.strokeRect(x - 1, y - 1, CARD_WIDTH + 2, CARD_HEIGHT + 2);
+        var handWidth = cardSpacing * (handSize - 1) + CARD_WIDTH;
 
-    this.fillStyle = 'black';
-    this.fillText(card.suit + ", " + card.value, x + 5, y + 50);
+        for(var j = handSize - 1; j >= 0; j--) {
+            this.drawCard('back', center.x - handWidth / 2 + cardSpacing * j, center.y - CARD_HEIGHT / 2);
+        }
 
-    this.restore();
+        var nickname = opponentHands[i].nickname;
+
+        this.save();
+
+        this.font = '16px Helvetica, sans-serif';
+
+        var nicknameMetrics = this.measureText(nickname);
+
+        this.fillStyle = 'white';
+
+        this.fillRect(
+            center.x - nicknameMetrics.width / 1.9 - 10,
+            center.y + CARD_HEIGHT / 2 + 4,
+            nicknameMetrics.width + 20,
+            20
+        );
+
+        this.fillStyle = 'black';
+
+        this.fillText(
+            nickname,
+            center.x - nicknameMetrics.width / 1.9,
+            center.y + CARD_HEIGHT / 2 + 18
+        );
+
+        this.restore();
+    }
 };
 
 CanvasRenderingContext2D.prototype.drawCard = drawCard;
 CanvasRenderingContext2D.prototype.drawPlayersHand = drawPlayersHand;
 CanvasRenderingContext2D.prototype.drawCardsOnTable = drawCardsOnTable;
+CanvasRenderingContext2D.prototype.drawOpponentHands = drawOpponentHands;
 
 $(document).ready(function() {
     cardSpritesImg.addEventListener('load', function() {
@@ -111,6 +145,10 @@ $(document).ready(function() {
         ctx.canvasWidth = canvas.width;
         ctx.canvasHeight = canvas.height;
 
+        /*
+         * Fill background
+         */
+
         var grad = ctx.createLinearGradient(0, 0, 0, 600);
 
         grad.addColorStop(0.0, '#afa');
@@ -118,6 +156,9 @@ $(document).ready(function() {
         grad.addColorStop(1.0, '#070');
 
         ctx.fillStyle = grad;
+
+        // Windows Solitaire bg color
+        // ctx.fillStyle = '#008000';
 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -144,20 +185,12 @@ $(document).ready(function() {
 
         ctx.drawCardsOnTable(tableStacks);
 
-        for(var n = 2; n <= 6; n++) {
-            var centers = getOpponentHandCenters(n);
-
-            for(var i = 0; i < centers.length; i++) {
-                ctx.fillStyle = ['red', 'blue', 'magenta', 'yellow', 'black'][n - 2];
-                ctx.globalAlpha = 0.2;
-                ctx.fillRect(centers[i].x - 25, centers[i].y - 25, 10 * n, 10 * n);
-
-                ctx.globalAlpha = 1;
-
-                ctx.fillStyle = 'black';
-                ctx.font = '24px serif';
-                ctx.fillText(n, centers[i].x + 10 * n, centers[i].y);
-            }
-        }
+        ctx.drawOpponentHands([
+            {nickname: 'pidor', numCards: 2},
+            {nickname: 'pidor pidor pidor pidor', numCards: 25},
+            {nickname: '|||/||//||///111', numCards: 15},
+            {nickname: '1ll1l1ll1l1lll11', numCards: 10},
+            {nickname: 'o priv', numCards: 18}
+        ]);
     });
 });
