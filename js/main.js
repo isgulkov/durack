@@ -57,6 +57,48 @@ var getOpponentHandCenters = (function() {
     };
 }());
 
+var drawBackground = function(spotlightPosition) {
+    var grad = this.createLinearGradient(0, 0, 0, 600);
+
+    grad.addColorStop(0.0, '#afa');
+    grad.addColorStop(0.75, '#0c0');
+    grad.addColorStop(1.0, '#070');
+
+    this.fillStyle = grad;
+
+    // Windows Solitaire bg color
+    // this.fillStyle = '#008000';
+
+    this.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+    if(spotlightPosition !== undefined) {
+        this.save();
+
+        this.globalAlpha = 0.5;
+        this.globalCompositeOperation = 'overlay';
+
+        this.fillStyle = '#fffacd';
+
+        this.beginPath();
+
+        if(spotlightPosition === 'player') {
+            this.arc(this.canvasWidth / 2, this.canvasHeight + 300, 500, 0, Math.PI, true);
+        }
+        else if(spotlightPosition.opponentId !== undefined) {
+            var opponentCenters = getOpponentHandCenters(spotlightPosition.numPlayers);
+
+            var center = opponentCenters[spotlightPosition.opponentId];
+
+            this.arc(center.x, center.y, 100, 0, 2 * Math.PI);
+        }
+
+        this.closePath();
+        this.fill();
+
+        this.restore();
+    }
+};
+
 var drawCard = function(card, x, y, horizontal) {
     var offset = getCardSpriteOffset(card);
 
@@ -162,6 +204,7 @@ var drawLeftoverStack = function(stackSize, bottomCard) {
     }
 };
 
+CanvasRenderingContext2D.prototype.drawBackground = drawBackground;
 CanvasRenderingContext2D.prototype.drawCard = drawCard;
 CanvasRenderingContext2D.prototype.drawPlayersHand = drawPlayersHand;
 CanvasRenderingContext2D.prototype.drawCardsOnTable = drawCardsOnTable;
@@ -176,22 +219,7 @@ $(document).ready(function() {
         ctx.canvasWidth = canvas.width;
         ctx.canvasHeight = canvas.height;
 
-        /*
-         * Fill background
-         */
-
-        var grad = ctx.createLinearGradient(0, 0, 0, 600);
-
-        grad.addColorStop(0.0, '#afa');
-        grad.addColorStop(0.75, '#0c0');
-        grad.addColorStop(1.0, '#070');
-
-        ctx.fillStyle = grad;
-
-        // Windows Solitaire bg color
-        // ctx.fillStyle = '#008000';
-
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawBackground({numPlayers: 6, opponentId: 1});
 
         var playerCards = [{suit: 'spades', value: '10'}, {suit: 'hearts', value: 'A'}, {suit: 'clubs', value: 'Q'}, {suit: 'clubs', value: '7'}, {suit: 'hearts', value: '8'}, {suit: 'diamonds', value: '8'}];
 
@@ -226,7 +254,7 @@ $(document).ready(function() {
 
         ctx.drawLeftoverStack(2, {suit: 'hearts', value: 'A'});
 
-        // TODO: signify whose move is it
+        // TODO: squeeze player's hand
         // TODO: draw played stack
     });
 });
