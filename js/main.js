@@ -81,13 +81,13 @@ var drawBackground = function(spotlightPosition) {
 
         this.beginPath();
 
-        if(spotlightPosition === 'player') {
+        if(spotlightPosition.currentTurn === 'player') {
             this.arc(this.canvasWidth / 2, this.canvasHeight + 300, 500, 0, Math.PI, true);
         }
-        else if(spotlightPosition.opponentId !== undefined) {
+        else if(spotlightPosition.currentTurn !== undefined) {
             var opponentCenters = getOpponentHandCenters(spotlightPosition.numPlayers);
 
-            var center = opponentCenters[spotlightPosition.opponentId];
+            var center = opponentCenters[spotlightPosition.currentTurn];
 
             this.arc(center.x, center.y, 100, 0, 2 * Math.PI);
         }
@@ -228,6 +228,76 @@ CanvasRenderingContext2D.prototype.drawOpponentHands = drawOpponentHands;
 CanvasRenderingContext2D.prototype.drawLeftoverStack = drawLeftoverStack;
 CanvasRenderingContext2D.prototype.drawPlayedStack = drawPlayedStack;
 
+var displayGameState = function(ctx, gameState) {
+    ctx.drawBackground({numPlayers: gameState.numPlayers, currentTurn: gameState.currentTurn});
+
+    ctx.drawPlayersHand(gameState.playerHand);
+
+    ctx.drawCardsOnTable(gameState.tableStacks);
+
+    ctx.drawOpponentHands(gameState.opponents);
+
+    ctx.drawLeftoverStack(gameState.leftoverStackSize, gameState.bottomCard);
+
+    ctx.drawPlayedStack(gameState.playedStackSize);
+};
+
+var gameState = {
+    numPlayers: 6,
+    currentTurn: 1,
+
+    playerHand: [
+        {suit: 'spades', value: '10'},
+        {suit: 'hearts', value: 'A'},
+        {suit: 'clubs', value: 'Q'},
+        {suit: 'clubs', value: '7'},
+        {suit: 'hearts', value: '8'},
+        {suit: 'diamonds', value: '8'},
+        {suit: 'spades', value: '10'},
+        {suit: 'hearts', value: 'A'},
+        {suit: 'clubs', value: 'Q'},
+        {suit: 'clubs', value: '7'},
+        {suit: 'hearts', value: '8'},
+        {suit: 'diamonds', value: '8'},
+        {suit: 'spades', value: '10'},
+        {suit: 'hearts', value: 'A'},
+        {suit: 'clubs', value: 'Q'},
+        {suit: 'clubs', value: '7'},
+        {suit: 'hearts', value: '8'},
+        {suit: 'diamonds', value: '8'}
+    ],
+
+    tableStacks: [
+        {
+            top: {suit: 'spades', value: '10'},
+            bottom: {suit: 'hearts', value: 'A'}
+        },
+        {
+            top: {suit: 'clubs', value: 'Q'},
+            bottom: {suit: 'clubs', value: '7'}
+        },
+        {
+            top: {suit: 'hearts', value: '8'}
+        },
+        {
+            top: {suit: 'diamonds', value: '8'}
+        }
+    ],
+
+    opponents: [
+        {nickname: 'pidor', numCards: 2},
+        {nickname: 'pidor pidor pidor pidor', numCards: 25},
+        {nickname: '|||/||//||///111', numCards: 15},
+        {nickname: '1ll1l1ll1l1lll11', numCards: 10},
+        {nickname: 'o priv', numCards: 18}
+    ],
+
+    leftoverStackSize: 2,
+    bottomCard: {suit: 'hearts', value: 'A'},
+
+    playedStackSize: 10
+};
+
 $(document).ready(function() {
     cardSpritesImg.addEventListener('load', function() {
         var canvas = document.getElementById('main_canvas');
@@ -236,60 +306,6 @@ $(document).ready(function() {
         ctx.canvasWidth = canvas.width;
         ctx.canvasHeight = canvas.height;
 
-        ctx.drawBackground({numPlayers: 6, opponentId: 1});
-
-        var playerCards = [
-            {suit: 'spades', value: '10'},
-            {suit: 'hearts', value: 'A'},
-            {suit: 'clubs', value: 'Q'},
-            {suit: 'clubs', value: '7'},
-            {suit: 'hearts', value: '8'},
-            {suit: 'diamonds', value: '8'},
-            {suit: 'spades', value: '10'},
-            {suit: 'hearts', value: 'A'},
-            {suit: 'clubs', value: 'Q'},
-            {suit: 'clubs', value: '7'},
-            {suit: 'hearts', value: '8'},
-            {suit: 'diamonds', value: '8'},
-            {suit: 'spades', value: '10'},
-            {suit: 'hearts', value: 'A'},
-            {suit: 'clubs', value: 'Q'},
-            {suit: 'clubs', value: '7'},
-            {suit: 'hearts', value: '8'},
-            {suit: 'diamonds', value: '8'}
-        ];
-
-        ctx.drawPlayersHand(playerCards);
-
-        var tableStacks = [
-            {
-                top: {suit: 'spades', value: '10'},
-                bottom: {suit: 'hearts', value: 'A'}
-            },
-            {
-                top: {suit: 'clubs', value: 'Q'},
-                bottom: {suit: 'clubs', value: '7'}
-            },
-            {
-                top: {suit: 'hearts', value: '8'}
-            },
-            {
-                top: {suit: 'diamonds', value: '8'}
-            }
-            ];
-
-        ctx.drawCardsOnTable(tableStacks);
-
-        ctx.drawOpponentHands([
-            {nickname: 'pidor', numCards: 2},
-            {nickname: 'pidor pidor pidor pidor', numCards: 25},
-            {nickname: '|||/||//||///111', numCards: 15},
-            {nickname: '1ll1l1ll1l1lll11', numCards: 10},
-            {nickname: 'o priv', numCards: 18}
-        ]);
-
-        ctx.drawLeftoverStack(2, {suit: 'hearts', value: 'A'});
-
-        ctx.drawPlayedStack(10);
+        displayGameState(ctx, gameState);
     });
 });
