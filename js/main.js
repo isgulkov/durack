@@ -294,7 +294,7 @@ var gameState = {
     playedStackSize: 10
 };
 
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     cardSpritesImg.addEventListener('load', function() {
         var canvas = document.getElementById('main_canvas');
         var ctx = canvas.getContext('2d');
