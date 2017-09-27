@@ -57,7 +57,7 @@ var getOpponentHandCenters = (function() {
     };
 }());
 
-var drawBackground = function(spotlightPosition) {
+var drawBackground = function(numPlayers, currentPhase, currentActor) {
     var grad = this.createLinearGradient(0, 0, 0, 600);
 
     grad.addColorStop(0.0, '#afa');
@@ -71,23 +71,31 @@ var drawBackground = function(spotlightPosition) {
 
     this.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
 
-    if(spotlightPosition !== undefined) {
+    if(currentActor !== undefined) {
         this.save();
 
         this.globalAlpha = 0.5;
-        this.globalCompositeOperation = 'overlay';
 
-        this.fillStyle = '#fffacd';
+        if(currentPhase === 'init') {
+            this.globalCompositeOperation = 'overlay';
+
+            this.fillStyle = '#fffacd';
+        }
+        else if(currentPhase === 'follow') {
+            this.globalCompositeOperation = 'color';
+
+            this.fillStyle = '#ff0000';
+        }
 
         this.beginPath();
 
-        if(spotlightPosition.currentTurn === 'player') {
+        if(currentActor === 0) {
             this.arc(this.canvasWidth / 2, this.canvasHeight + 300, 500, 0, Math.PI, true);
         }
-        else if(spotlightPosition.currentTurn !== undefined) {
-            var opponentCenters = getOpponentHandCenters(spotlightPosition.numPlayers);
+        else {
+            var opponentCenters = getOpponentHandCenters(numPlayers);
 
-            var center = opponentCenters[spotlightPosition.currentTurn];
+            var center = opponentCenters[currentActor - 1];
 
             this.arc(center.x, center.y, 100, 0, 2 * Math.PI);
         }
@@ -229,7 +237,7 @@ CanvasRenderingContext2D.prototype.drawLeftoverStack = drawLeftoverStack;
 CanvasRenderingContext2D.prototype.drawPlayedStack = drawPlayedStack;
 
 var displayGameState = function(ctx, gameState) {
-    ctx.drawBackground({numPlayers: gameState.numPlayers, currentTurn: gameState.currentTurn});
+    ctx.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
 
     ctx.drawPlayersHand(gameState.playerHand);
 
@@ -244,7 +252,9 @@ var displayGameState = function(ctx, gameState) {
 
 var gameState = {
     numPlayers: 6,
-    currentTurn: 1,
+
+    currentPhase: 'init',
+    currentActor: 1,
 
     playerHand: [
         {suit: 'spades', value: '10'},
@@ -307,5 +317,34 @@ $(document).ready(function() {
         ctx.canvasHeight = canvas.height;
 
         displayGameState(ctx, gameState);
+
+        // TODO: process clicks?
+        // TODO: timers?
+
+        var pidr = function() {
+            console.log(gameState.currentPhase, gameState.currentActor);
+
+            if(gameState.currentPhase === 'init') {
+                gameState.currentPhase = 'follow';
+
+                gameState.currentActor += 1;
+                gameState.currentActor %= gameState.numPlayers;
+            }
+            else {
+                gameState.currentPhase = 'init'
+            }
+
+            console.log(gameState.currentPhase, gameState.currentActor);
+
+            gameState.currentTurn += 1;
+
+            displayGameState(ctx, gameState);
+
+            setTimeout(function() {
+                window.requestAnimationFrame(pidr);
+            }, 1000);
+        };
+
+        window.requestAnimationFrame(pidr);
     });
 });
