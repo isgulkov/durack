@@ -57,7 +57,7 @@ var getOpponentHandCenters = (function() {
     };
 }());
 
-var drawBackground = function(numPlayers, currentPhase, currentActor) {
+CanvasRenderingContext2D.prototype.drawBackground = function(numPlayers, currentPhase, currentActor) {
     var grad = this.createLinearGradient(0, 0, 0, 600);
 
     grad.addColorStop(0.0, '#afa');
@@ -106,8 +106,7 @@ var drawBackground = function(numPlayers, currentPhase, currentActor) {
         this.restore();
     }
 };
-
-var drawCard = function(card, x, y, horizontal) {
+CanvasRenderingContext2D.prototype.drawCard = function(card, x, y, horizontal) {
     var offset = getCardSpriteOffset(card);
 
     if(horizontal) {
@@ -122,8 +121,7 @@ var drawCard = function(card, x, y, horizontal) {
         this.restore();
     }
 };
-
-var drawPlayersHand = function(playerCards) {
+CanvasRenderingContext2D.prototype.drawPlayersHand = function(playerCards) {
     var cardSpacing = Math.min(600 / playerCards.length, CARD_WIDTH + 10);
 
     var handWidth = cardSpacing * (playerCards.length - 1) + CARD_WIDTH;
@@ -134,8 +132,7 @@ var drawPlayersHand = function(playerCards) {
         this.drawCard(playerCards[i], totalLeftOffset + cardSpacing * i, this.canvasHeight - CARD_HEIGHT - 50);
     }
 };
-
-var drawCardsOnTable = function(tableStacks) {
+CanvasRenderingContext2D.prototype.drawCardsOnTable = function(tableStacks) {
     var stackSpacing = Math.min(CARD_WIDTH + 20, (550 - CARD_WIDTH) / tableStacks.length);
 
     var totalLeftOffset = (this.canvasWidth - stackSpacing * (tableStacks.length)) / 2;
@@ -153,8 +150,7 @@ var drawCardsOnTable = function(tableStacks) {
         }
     }
 };
-
-var drawOpponentHands = function(opponentHands) {
+CanvasRenderingContext2D.prototype.drawOpponentHands = function(opponentHands) {
     var opponentHandCenters = getOpponentHandCenters(opponentHands.length + 1);
 
     for(var i = 0; i < opponentHands.length; i++) {
@@ -197,8 +193,7 @@ var drawOpponentHands = function(opponentHands) {
         this.restore();
     }
 };
-
-var drawLeftoverStack = function(stackSize, bottomCard) {
+CanvasRenderingContext2D.prototype.drawLeftoverStack = function(stackSize, bottomCard) {
     var additionalOffset = 2 * Math.max(0, stackSize - 15);
 
     if(stackSize === 0) {
@@ -217,8 +212,7 @@ var drawLeftoverStack = function(stackSize, bottomCard) {
         this.drawCard('back', 508 + 2 * i - additionalOffset, -135, true);
     }
 };
-
-var drawPlayedStack = function(stackSize) {
+CanvasRenderingContext2D.prototype.drawPlayedStack = function(stackSize) {
     stackSize = Math.min(30, stackSize);
 
     var cardSpacing = Math.min(10, 80 / stackSize);
@@ -227,14 +221,6 @@ var drawPlayedStack = function(stackSize) {
         this.drawCard('back', this.canvasWidth - CARD_WIDTH - 5 - cardSpacing * i, this.canvasHeight - CARD_HEIGHT + 10);
     }
 };
-
-CanvasRenderingContext2D.prototype.drawBackground = drawBackground;
-CanvasRenderingContext2D.prototype.drawCard = drawCard;
-CanvasRenderingContext2D.prototype.drawPlayersHand = drawPlayersHand;
-CanvasRenderingContext2D.prototype.drawCardsOnTable = drawCardsOnTable;
-CanvasRenderingContext2D.prototype.drawOpponentHands = drawOpponentHands;
-CanvasRenderingContext2D.prototype.drawLeftoverStack = drawLeftoverStack;
-CanvasRenderingContext2D.prototype.drawPlayedStack = drawPlayedStack;
 
 var displayGameState = function(ctx, gameState) {
     ctx.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
