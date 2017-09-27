@@ -122,24 +122,24 @@ var drawPlayersHand = function(playerCards) {
 
     var totalLeftOffset = (this.canvasWidth - handWidth) / 2;
 
-    console.log(handWidth);
-
     for(var i = 0; i < playerCards.length; i++) {
         this.drawCard(playerCards[i], totalLeftOffset + cardSpacing * i, this.canvasHeight - CARD_HEIGHT - 50);
     }
 };
 
 var drawCardsOnTable = function(tableStacks) {
-    var totalLeftOffset = (this.canvasWidth - CARD_WIDTH * tableStacks.length - 20 * (tableStacks.length - 1)) / 2;
-    var topOffset = 200;
+    var stackSpacing = Math.min(CARD_WIDTH + 20, (550 - CARD_WIDTH) / tableStacks.length);
 
-    for(var i = tableStacks.length - 1; i >= 0; i--) {
-        this.drawCard(tableStacks[i].top, totalLeftOffset + (CARD_WIDTH + 20) * i, topOffset);
+    var totalLeftOffset = (this.canvasWidth - stackSpacing * (tableStacks.length)) / 2;
+    var topOffset = 225;
+
+    for(var i = 0; i < tableStacks.length; i++) {
+        this.drawCard(tableStacks[i].top, totalLeftOffset + (stackSpacing) * i, topOffset);
 
         if(tableStacks[i].bottom !== undefined) {
             this.drawCard(
                 tableStacks[i].bottom,
-                totalLeftOffset + 5 + (CARD_WIDTH + 20) * i,
+                totalLeftOffset + 5 + (stackSpacing) * i,
                 topOffset + CARD_HEIGHT / 2
             );
         }
