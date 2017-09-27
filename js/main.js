@@ -236,7 +236,7 @@ CanvasRenderingContext2D.prototype.displayGameState = function(gameState) {
     this.drawPlayedStack(gameState.playedStackSize);
 };
 
-var gameState = {
+var initialState = {
     numPlayers: 6,
 
     currentPhase: 'init',
@@ -294,6 +294,41 @@ var gameState = {
     playedStackSize: 10
 };
 
+var gameState = function(state, action) {
+    if(action.type === 'COME ON IT') {
+        var phase = state.currentPhase, actor = state.currentActor;
+
+        console.log(phase, actor);
+
+        if(phase === 'init') {
+            phase = 'follow';
+
+            actor += 1;
+            actor %= state.numPlayers;
+        }
+        else {
+            phase = 'init'
+        }
+
+        console.log(phase, actor);
+
+        return Object.assign({}, state, {
+            currentPhase: phase,
+            currentActor: actor
+        });
+    }
+
+    return state;
+};
+
+var gameStore = Redux.createStore(gameState, initialState);
+
+gameStore.subscribe(function() {
+    window.requestAnimationFrame(function(t) {
+        gameStore.ctx.displayGameState(gameStore.getState());
+    });
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     cardSpritesImg.addEventListener('load', function() {
         var canvas = document.getElementById('main_canvas');
@@ -302,35 +337,18 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.canvasWidth = canvas.width;
         ctx.canvasHeight = canvas.height;
 
-        ctx.displayGameState(gameState);
+        gameStore.ctx = ctx; // TODO: put somewhere else
 
-        // TODO: process clicks?
-        // TODO: timers?
+        window.requestAnimationFrame(function() {
+            window.requestAnimationFrame(function(t) {
+                gameStore.ctx.displayGameState(gameStore.getState());
+            });
+        });
 
-        var pidr = function() {
-            console.log(gameState.currentPhase, gameState.currentActor);
+        setInterval(function() {
+            gameStore.dispatch({type: 'COME ON IT'});
+        }, 1000);
 
-            if(gameState.currentPhase === 'init') {
-                gameState.currentPhase = 'follow';
-
-                gameState.currentActor += 1;
-                gameState.currentActor %= gameState.numPlayers;
-            }
-            else {
-                gameState.currentPhase = 'init'
-            }
-
-            console.log(gameState.currentPhase, gameState.currentActor);
-
-            gameState.currentTurn += 1;
-
-            ctx.displayGameState(gameState);
-
-            setTimeout(function() {
-                window.requestAnimationFrame(pidr);
-            }, 1000);
-        };
-
-        window.requestAnimationFrame(pidr);
+        // TODO: restructure with ES6 imports using Babel
     });
 });
