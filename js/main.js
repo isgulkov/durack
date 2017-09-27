@@ -4,237 +4,240 @@
 
 'use strict';
 
-var CARD_WIDTH = 72;
-var CARD_HEIGHT = 100;
-
-var cardSpritesImg = new Image(); // TODO: replace data uri with url/onload
+var cardSpritesImg = new Image();
 cardSpritesImg.src = 'img/cards.gif';
 
-var getCardSpriteOffset = function(card) {
-    if(card === 'back') {
-        return {
-            x: 5 * CARD_WIDTH,
-            y: 4 * CARD_HEIGHT
-        }
-    }
-    else {
-        var y = CARD_HEIGHT * ['hearts', 'diamonds', 'clubs', 'spades'].indexOf(card.suit);
-        var x = CARD_WIDTH * ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'].indexOf(card.value);
+// All the display code
+(function() {
+    var CARD_WIDTH = 72;
+    var CARD_HEIGHT = 100;
 
-        return {
-            x: x,
-            y: y
-        }
-    }
-};
-
-var getOpponentHandCenters = (function() {
-    var allCenters = [
-        {x: 100, y: 325},
-        {x: 125, y: 150},
-        {x: 300, y: 75},
-        {x: 500, y: 75},
-        {x: 700, y: 75},
-        {x: 1000 - 125, y: 150},
-        {x: 1000 - 100, y: 325}
-    ];
-
-    return function(numPlayers) {
-        switch(numPlayers) {
-            case 2:
-                return [allCenters[3]];
-            case 3:
-                return [allCenters[1], allCenters[5]];
-            case 4:
-                return [allCenters[0], allCenters[3], allCenters[6]];
-            case 5:
-                return [allCenters[0], allCenters[2], allCenters[4], allCenters[6]];
-            case 6:
-                return [allCenters[0], allCenters[1], allCenters[3], allCenters[5], allCenters[6]];
-            default:
-                window.alert("shit");
-        }
-    };
-}());
-
-CanvasRenderingContext2D.prototype.drawBackground = function(numPlayers, currentPhase, currentActor) {
-    var grad = this.createLinearGradient(0, 0, 0, 600);
-
-    grad.addColorStop(0.0, '#afa');
-    grad.addColorStop(0.75, '#0c0');
-    grad.addColorStop(1.0, '#070');
-
-    this.fillStyle = grad;
-
-    // Windows Solitaire bg color
-    // this.fillStyle = '#008000';
-
-    this.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
-
-    if(currentActor !== undefined) {
-        this.save();
-
-        this.globalAlpha = 0.5;
-
-        if(currentPhase === 'init') {
-            this.globalCompositeOperation = 'overlay';
-
-            this.fillStyle = '#fffacd';
-        }
-        else if(currentPhase === 'follow') {
-            this.globalCompositeOperation = 'color';
-
-            this.fillStyle = '#ff0000';
-        }
-
-        this.beginPath();
-
-        if(currentActor === 0) {
-            this.arc(this.canvasWidth / 2, this.canvasHeight + 300, 500, 0, Math.PI, true);
+    var getCardSpriteOffset = function(card) {
+        if(card === 'back') {
+            return {
+                x: 5 * CARD_WIDTH,
+                y: 4 * CARD_HEIGHT
+            }
         }
         else {
-            var opponentCenters = getOpponentHandCenters(numPlayers);
+            var y = CARD_HEIGHT * ['hearts', 'diamonds', 'clubs', 'spades'].indexOf(card.suit);
+            var x = CARD_WIDTH * ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'].indexOf(card.value);
 
-            var center = opponentCenters[currentActor - 1];
+            return {
+                x: x,
+                y: y
+            }
+        }
+    };
 
-            this.arc(center.x, center.y, 100, 0, 2 * Math.PI);
+    var getOpponentHandCenters = (function() {
+        var allCenters = [
+            {x: 100, y: 325},
+            {x: 125, y: 150},
+            {x: 300, y: 75},
+            {x: 500, y: 75},
+            {x: 700, y: 75},
+            {x: 1000 - 125, y: 150},
+            {x: 1000 - 100, y: 325}
+        ];
+
+        return function(numPlayers) {
+            switch(numPlayers) {
+                case 2:
+                    return [allCenters[3]];
+                case 3:
+                    return [allCenters[1], allCenters[5]];
+                case 4:
+                    return [allCenters[0], allCenters[3], allCenters[6]];
+                case 5:
+                    return [allCenters[0], allCenters[2], allCenters[4], allCenters[6]];
+                case 6:
+                    return [allCenters[0], allCenters[1], allCenters[3], allCenters[5], allCenters[6]];
+                default:
+                    window.alert("shit");
+            }
+        };
+    }());
+
+    CanvasRenderingContext2D.prototype.drawBackground = function(numPlayers, currentPhase, currentActor) {
+        var grad = this.createLinearGradient(0, 0, 0, 600);
+
+        grad.addColorStop(0.0, '#afa');
+        grad.addColorStop(0.75, '#0c0');
+        grad.addColorStop(1.0, '#070');
+
+        this.fillStyle = grad;
+
+        // Windows Solitaire bg color
+        // this.fillStyle = '#008000';
+
+        this.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+        if(currentActor !== undefined) {
+            this.save();
+
+            this.globalAlpha = 0.5;
+
+            if(currentPhase === 'init') {
+                this.globalCompositeOperation = 'overlay';
+
+                this.fillStyle = '#fffacd';
+            }
+            else if(currentPhase === 'follow') {
+                this.globalCompositeOperation = 'color';
+
+                this.fillStyle = '#ff0000';
+            }
+
+            this.beginPath();
+
+            if(currentActor === 0) {
+                this.arc(this.canvasWidth / 2, this.canvasHeight + 300, 500, 0, Math.PI, true);
+            }
+            else {
+                var opponentCenters = getOpponentHandCenters(numPlayers);
+
+                var center = opponentCenters[currentActor - 1];
+
+                this.arc(center.x, center.y, 100, 0, 2 * Math.PI);
+            }
+
+            this.closePath();
+            this.fill();
+
+            this.restore();
+        }
+    };
+    CanvasRenderingContext2D.prototype.drawCard = function(card, x, y, horizontal) {
+        var offset = getCardSpriteOffset(card);
+
+        if(horizontal) {
+            this.save();
+
+            this.rotate(Math.PI / 2);
         }
 
-        this.closePath();
-        this.fill();
+        this.drawImage(cardSpritesImg, offset.x, offset.y, CARD_WIDTH, CARD_HEIGHT, x, y, CARD_WIDTH, CARD_HEIGHT);
 
-        this.restore();
-    }
-};
-CanvasRenderingContext2D.prototype.drawCard = function(card, x, y, horizontal) {
-    var offset = getCardSpriteOffset(card);
+        if(horizontal) {
+            this.restore();
+        }
+    };
+    CanvasRenderingContext2D.prototype.drawPlayersHand = function(playerCards) {
+        var cardSpacing = Math.min(600 / playerCards.length, CARD_WIDTH + 10);
 
-    if(horizontal) {
-        this.save();
+        var handWidth = cardSpacing * (playerCards.length - 1) + CARD_WIDTH;
 
-        this.rotate(Math.PI / 2);
-    }
+        var totalLeftOffset = (this.canvasWidth - handWidth) / 2;
 
-    this.drawImage(cardSpritesImg, offset.x, offset.y, CARD_WIDTH, CARD_HEIGHT, x, y, CARD_WIDTH, CARD_HEIGHT);
+        for(var i = 0; i < playerCards.length; i++) {
+            this.drawCard(playerCards[i], totalLeftOffset + cardSpacing * i, this.canvasHeight - CARD_HEIGHT - 50);
+        }
+    };
+    CanvasRenderingContext2D.prototype.drawCardsOnTable = function(tableStacks) {
+        var stackSpacing = Math.min(CARD_WIDTH + 20, (550 - CARD_WIDTH) / tableStacks.length);
 
-    if(horizontal) {
-        this.restore();
-    }
-};
-CanvasRenderingContext2D.prototype.drawPlayersHand = function(playerCards) {
-    var cardSpacing = Math.min(600 / playerCards.length, CARD_WIDTH + 10);
+        var totalLeftOffset = (this.canvasWidth - stackSpacing * (tableStacks.length)) / 2;
+        var topOffset = 225;
 
-    var handWidth = cardSpacing * (playerCards.length - 1) + CARD_WIDTH;
+        for(var i = 0; i < tableStacks.length; i++) {
+            this.drawCard(tableStacks[i].top, totalLeftOffset + (stackSpacing) * i, topOffset);
 
-    var totalLeftOffset = (this.canvasWidth - handWidth) / 2;
+            if(tableStacks[i].bottom !== undefined) {
+                this.drawCard(
+                    tableStacks[i].bottom,
+                    totalLeftOffset + 5 + (stackSpacing) * i,
+                    topOffset + CARD_HEIGHT / 2
+                );
+            }
+        }
+    };
+    CanvasRenderingContext2D.prototype.drawOpponentHands = function(opponentHands) {
+        var opponentHandCenters = getOpponentHandCenters(opponentHands.length + 1);
 
-    for(var i = 0; i < playerCards.length; i++) {
-        this.drawCard(playerCards[i], totalLeftOffset + cardSpacing * i, this.canvasHeight - CARD_HEIGHT - 50);
-    }
-};
-CanvasRenderingContext2D.prototype.drawCardsOnTable = function(tableStacks) {
-    var stackSpacing = Math.min(CARD_WIDTH + 20, (550 - CARD_WIDTH) / tableStacks.length);
+        for(var i = 0; i < opponentHands.length; i++) {
+            var center = opponentHandCenters[i];
+            var handSize = opponentHands[i].numCards;
 
-    var totalLeftOffset = (this.canvasWidth - stackSpacing * (tableStacks.length)) / 2;
-    var topOffset = 225;
+            var cardSpacing = Math.min(10, 100 / handSize);
 
-    for(var i = 0; i < tableStacks.length; i++) {
-        this.drawCard(tableStacks[i].top, totalLeftOffset + (stackSpacing) * i, topOffset);
+            var handWidth = cardSpacing * (handSize - 1) + CARD_WIDTH;
 
-        if(tableStacks[i].bottom !== undefined) {
-            this.drawCard(
-                tableStacks[i].bottom,
-                totalLeftOffset + 5 + (stackSpacing) * i,
-                topOffset + CARD_HEIGHT / 2
+            for(var j = handSize - 1; j >= 0; j--) {
+                this.drawCard('back', center.x - handWidth / 2 + cardSpacing * j, center.y - CARD_HEIGHT / 2);
+            }
+
+            var nickname = opponentHands[i].nickname;
+
+            this.save();
+
+            this.font = '16px Helvetica, sans-serif';
+
+            var nicknameMetrics = this.measureText(nickname);
+
+            this.fillStyle = 'white';
+
+            this.fillRect(
+                center.x - nicknameMetrics.width / 1.9 - 10,
+                center.y + CARD_HEIGHT / 2 + 4,
+                nicknameMetrics.width + 20,
+                20
             );
+
+            this.fillStyle = 'black';
+
+            this.fillText(
+                nickname,
+                center.x - nicknameMetrics.width / 1.9,
+                center.y + CARD_HEIGHT / 2 + 18
+            );
+
+            this.restore();
         }
-    }
-};
-CanvasRenderingContext2D.prototype.drawOpponentHands = function(opponentHands) {
-    var opponentHandCenters = getOpponentHandCenters(opponentHands.length + 1);
+    };
+    CanvasRenderingContext2D.prototype.drawLeftoverStack = function(stackSize, bottomCard) {
+        var additionalOffset = 2 * Math.max(0, stackSize - 15);
 
-    for(var i = 0; i < opponentHands.length; i++) {
-        var center = opponentHandCenters[i];
-        var handSize = opponentHands[i].numCards;
+        if(stackSize === 0) {
+            this.save();
 
-        var cardSpacing = Math.min(10, 100 / handSize);
-
-        var handWidth = cardSpacing * (handSize - 1) + CARD_WIDTH;
-
-        for(var j = handSize - 1; j >= 0; j--) {
-            this.drawCard('back', center.x - handWidth / 2 + cardSpacing * j, center.y - CARD_HEIGHT / 2);
+            this.globalCompositeOperation = 'darken';
         }
 
-        var nickname = opponentHands[i].nickname;
+        this.drawCard(bottomCard, 50, 600 - CARD_HEIGHT - 25 - additionalOffset);
 
-        this.save();
+        if(stackSize === 0) {
+            this.restore();
+        }
 
-        this.font = '16px Helvetica, sans-serif';
+        for(var i = stackSize - 1; i > 0; i--) {
+            this.drawCard('back', 508 + 2 * i - additionalOffset, -135, true);
+        }
+    };
+    CanvasRenderingContext2D.prototype.drawPlayedStack = function(stackSize) {
+        stackSize = Math.min(30, stackSize);
 
-        var nicknameMetrics = this.measureText(nickname);
+        var cardSpacing = Math.min(10, 80 / stackSize);
 
-        this.fillStyle = 'white';
+        for(var i = 0; i < stackSize; i++) {
+            this.drawCard('back', this.canvasWidth - CARD_WIDTH - 5 - cardSpacing * i, this.canvasHeight - CARD_HEIGHT + 10);
+        }
+    };
 
-        this.fillRect(
-            center.x - nicknameMetrics.width / 1.9 - 10,
-            center.y + CARD_HEIGHT / 2 + 4,
-            nicknameMetrics.width + 20,
-            20
-        );
+    CanvasRenderingContext2D.prototype.displayGameState = function(gameState) {
+        this.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
 
-        this.fillStyle = 'black';
+        this.drawPlayersHand(gameState.playerHand);
 
-        this.fillText(
-            nickname,
-            center.x - nicknameMetrics.width / 1.9,
-            center.y + CARD_HEIGHT / 2 + 18
-        );
+        this.drawCardsOnTable(gameState.tableStacks);
 
-        this.restore();
-    }
-};
-CanvasRenderingContext2D.prototype.drawLeftoverStack = function(stackSize, bottomCard) {
-    var additionalOffset = 2 * Math.max(0, stackSize - 15);
+        this.drawOpponentHands(gameState.opponents);
 
-    if(stackSize === 0) {
-        this.save();
+        this.drawLeftoverStack(gameState.leftoverStackSize, gameState.bottomCard);
 
-        this.globalCompositeOperation = 'darken';
-    }
-
-    this.drawCard(bottomCard, 50, 600 - CARD_HEIGHT - 25 - additionalOffset);
-
-    if(stackSize === 0) {
-        this.restore();
-    }
-
-    for(var i = stackSize - 1; i > 0; i--) {
-        this.drawCard('back', 508 + 2 * i - additionalOffset, -135, true);
-    }
-};
-CanvasRenderingContext2D.prototype.drawPlayedStack = function(stackSize) {
-    stackSize = Math.min(30, stackSize);
-
-    var cardSpacing = Math.min(10, 80 / stackSize);
-
-    for(var i = 0; i < stackSize; i++) {
-        this.drawCard('back', this.canvasWidth - CARD_WIDTH - 5 - cardSpacing * i, this.canvasHeight - CARD_HEIGHT + 10);
-    }
-};
-
-CanvasRenderingContext2D.prototype.displayGameState = function(gameState) {
-    this.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
-
-    this.drawPlayersHand(gameState.playerHand);
-
-    this.drawCardsOnTable(gameState.tableStacks);
-
-    this.drawOpponentHands(gameState.opponents);
-
-    this.drawLeftoverStack(gameState.leftoverStackSize, gameState.bottomCard);
-
-    this.drawPlayedStack(gameState.playedStackSize);
-};
+        this.drawPlayedStack(gameState.playedStackSize);
+    };
+}());
 
 var initialState = {
     numPlayers: 6,
