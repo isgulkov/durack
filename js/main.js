@@ -222,18 +222,18 @@ CanvasRenderingContext2D.prototype.drawPlayedStack = function(stackSize) {
     }
 };
 
-var displayGameState = function(ctx, gameState) {
-    ctx.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
+CanvasRenderingContext2D.prototype.displayGameState = function(gameState) {
+    this.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
 
-    ctx.drawPlayersHand(gameState.playerHand);
+    this.drawPlayersHand(gameState.playerHand);
 
-    ctx.drawCardsOnTable(gameState.tableStacks);
+    this.drawCardsOnTable(gameState.tableStacks);
 
-    ctx.drawOpponentHands(gameState.opponents);
+    this.drawOpponentHands(gameState.opponents);
 
-    ctx.drawLeftoverStack(gameState.leftoverStackSize, gameState.bottomCard);
+    this.drawLeftoverStack(gameState.leftoverStackSize, gameState.bottomCard);
 
-    ctx.drawPlayedStack(gameState.playedStackSize);
+    this.drawPlayedStack(gameState.playedStackSize);
 };
 
 var gameState = {
@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.canvasWidth = canvas.width;
         ctx.canvasHeight = canvas.height;
 
-        displayGameState(ctx, gameState);
+        ctx.displayGameState(gameState);
 
         // TODO: process clicks?
         // TODO: timers?
@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             gameState.currentTurn += 1;
 
-            displayGameState(ctx, gameState);
+            ctx.displayGameState(gameState);
 
             setTimeout(function() {
                 window.requestAnimationFrame(pidr);
