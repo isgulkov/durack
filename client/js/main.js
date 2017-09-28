@@ -276,6 +276,38 @@ var initialState = {
             bottom: {suit: 'clubs', value: '7'}
         },
         {
+            top: {suit: 'spades', value: '10'},
+            bottom: {suit: 'hearts', value: 'A'}
+        },
+        {
+            top: {suit: 'clubs', value: 'Q'},
+            bottom: {suit: 'clubs', value: '7'}
+        },
+        {
+            top: {suit: 'spades', value: '10'},
+            bottom: {suit: 'hearts', value: 'A'}
+        },
+        {
+            top: {suit: 'clubs', value: 'Q'},
+            bottom: {suit: 'clubs', value: '7'}
+        },
+        {
+            top: {suit: 'spades', value: '10'},
+            bottom: {suit: 'hearts', value: 'A'}
+        },
+        {
+            top: {suit: 'clubs', value: 'Q'},
+            bottom: {suit: 'clubs', value: '7'}
+        },
+        {
+            top: {suit: 'spades', value: '10'},
+            bottom: {suit: 'hearts', value: 'A'}
+        },
+        {
+            top: {suit: 'clubs', value: 'Q'},
+            bottom: {suit: 'clubs', value: '7'}
+        },
+        {
             top: {suit: 'hearts', value: '8'}
         },
         {
@@ -285,7 +317,7 @@ var initialState = {
 
     opponents: [
         {nickname: 'pidor', numCards: 2},
-        {nickname: 'pidor pidor pidor pidor', numCards: 25},
+        {nickname: 'Григорий Козинов отсосал хуев корзину', numCards: 25},
         {nickname: '|||/||//||///111', numCards: 15},
         {nickname: '1ll1l1ll1l1lll11', numCards: 10},
         {nickname: 'o priv', numCards: 18}
@@ -348,9 +380,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        setInterval(function() {
-            gameStore.dispatch({type: 'COME ON IT'});
-        }, 1000);
+        var socket = new WebSocket('ws://localhost:8888/game');
+
+        socket.onmessage = function(event) {
+            var action = JSON.parse(event.data);
+
+            gameStore.dispatch(action);
+        };
 
         // TODO: restructure with ES6 imports using Babel
     });
