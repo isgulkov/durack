@@ -305,9 +305,22 @@ var uiStore = (function() {
             return state;
         };
 
+        var fNumLooking = function(state, action) {
+            if(state === undefined) {
+                return NaN;
+            }
+
+            if(action.type === 'UPDATE NUM LOOKING FOR GAME') {
+                return action.num;
+            }
+
+            return state;
+        };
+
         return Redux.combineReducers({
             displayed: fDisplayed,
-            status: fStatus
+            status: fStatus,
+            numLooking: fNumLooking
         })
     }();
 
@@ -326,8 +339,13 @@ var handleMenuUpdate = function() {
 
     document.getElementById('menu_container').style.display = menuState.displayed ? 'block' : 'none';
 
-    document.getElementById('message_looking_for_game').style.display
-        = (menuState.status === 'looking') ? 'block' : 'none';
+    if(menuState.status === 'looking') {
+        document.getElementById('message_looking_for_game').style.display = 'block';
+        document.getElementById('num_looking_for_game').innerHTML = menuState.numLooking;
+    }
+    else {
+        document.getElementById('message_looking_for_game').style.display = 'none';
+    }
 };
 
 var handleGameUpdate = function() {

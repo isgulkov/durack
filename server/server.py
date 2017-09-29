@@ -63,6 +63,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 logging.info("%s is no longer looking for game (currently %d total)"
                              % (self, len(GameSocketHandler.looking_for_game)))
 
+                GameSocketHandler.update_num_looking_for_game()
+
     @classmethod
     def send_periodic_shit(cls):
         logging.info("sending message to %d waiters", len(cls.looking_for_game))
@@ -171,32 +173,50 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 'init_state': dummy_state
             }))
 
+    @classmethod
+    def update_num_looking_for_game(cls):
+        for p in cls.looking_for_game:
+            p.write_message(json.dumps({
+                'type': 'UPDATE NUM LOOKING FOR GAME',
+                'num': len(cls.looking_for_game)
+            }))
+
     def on_message(self, message):
         msg = json.loads(message)
 
         if msg['action'] == 'FIND GAME':
-            GameSocketHandler.looking_for_game.add(self)
+            self.find_game()
 
-            self.write_message(json.dumps({
-                'type': 'LOOKING FOR GAME'
-            }))
+    def find_game(self):
+        GameSocketHandler.looking_for_game.add(self)
 
-            logging.info("%s looking for game (currently %d total)" % (self, len(GameSocketHandler.looking_for_game)))
+        self.write_message(json.dumps({
+            'type': 'LOOKING FOR GAME'
+        }))
 
-            # TODO: differentiate by number of players
-            if len(GameSocketHandler.looking_for_game) >= 2:
-                new_players = []
+        logging.info("%s looking for game (currently %d total)" % (self, len(GameSocketHandler.looking_for_game)))
 
-                for i in xrange(2):
-                    new_players.append(GameSocketHandler.looking_for_game.pop())
+        GameSocketHandler.update_num_looking_for_game()
 
-                GameSocketHandler.initialize_game(new_players)
+        # TODO: differentiate by number of players
+        if len(GameSocketHandler.looking_for_game) >= 5:
+            new_players = []
+
+            for i in xrange(5):
+                new_players.append(GameSocketHandler.looking_for_game.pop())
+
+            GameSocketHandler.initialize_game(new_players)
 
     def data_received(self, chunk):
         pass
 
     def __str__(self):
-        return str(self.stream.socket.getpeername())
+        socket = self.stream.socket
+
+        if socket is not None:
+            return str(self.stream.socket.getpeername())
+        else:
+            return "(disconnected)"
 
 
 if __name__ == "__main__":
