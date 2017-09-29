@@ -58,8 +58,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         return True # TODO: remove
 
     def on_close(self):
-        if self in GameSocketHandler.matchmaking_pool:
-            GameSocketHandler.remove_from_matchmaking_pool(self)
+        if self in self.matchmaking_pool:
+            self.remove_from_matchmaking_pool(self)
 
     @classmethod
     def initialize_game(self, players):
@@ -169,13 +169,13 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def remove_from_matchmaking_pool(cls, p):
-        if p in GameSocketHandler.matchmaking_pool:
-            GameSocketHandler.matchmaking_pool.remove(p)
+        if p in cls.matchmaking_pool:
+            cls.matchmaking_pool.remove(p)
 
             logging.info("%s is no longer looking for game (currently %d total)"
-                         % (p, len(GameSocketHandler.matchmaking_pool)))
+                         % (p, len(cls.matchmaking_pool)))
 
-            GameSocketHandler.update_num_looking_for_game()
+            cls.update_num_looking_for_game()
 
     def on_message(self, message):
         msg = json.loads(message)
@@ -183,30 +183,30 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         if msg['action'] == 'FIND GAME':
             self.find_game()
         elif msg['action'] == 'CANCEL FIND GAME':
-            GameSocketHandler.remove_from_matchmaking_pool(self)
+            self.remove_from_matchmaking_pool(self)
 
             self.write_message(json.dumps({
                 'type': 'STOPPED LOOKING FOR GAME'
             }))
 
     def find_game(self):
-        GameSocketHandler.matchmaking_pool.add(self)
+        self.matchmaking_pool.add(self)
 
         self.write_message(json.dumps({
             'type': 'LOOKING FOR GAME'
         }))
 
-        logging.info("%s looking for game (currently %d total)" % (self, len(GameSocketHandler.matchmaking_pool)))
+        logging.info("%s looking for game (currently %d total)" % (self, len(self.matchmaking_pool)))
 
-        GameSocketHandler.update_num_looking_for_game()
+        self.update_num_looking_for_game()
 
-        if len(GameSocketHandler.matchmaking_pool) >= GameSocketHandler.MIN_NUM_PLAYERS:
+        if len(self.matchmaking_pool) >= self.MIN_NUM_PLAYERS:
             new_players = []
 
-            while len(new_players) < 6 and len(GameSocketHandler.matchmaking_pool) != 0:
-                new_players.append(GameSocketHandler.matchmaking_pool.pop())
+            while len(new_players) < 6 and len(self.matchmaking_pool) != 0:
+                new_players.append(self.matchmaking_pool.pop())
 
-            GameSocketHandler.initialize_game(new_players)
+                self.initialize_game(new_players)
 
     def data_received(self, chunk):
         pass
