@@ -96,33 +96,34 @@ class GameState:
         for uid, name in players:
             hand = [deck.pop() for _ in xrange(6)]
 
-            player_hands[uid] = hand # TODO: index by position in order?
+            player_hands[uid] = hand
 
         ordered_players = list(players)
         urandom_shuffle_inplace(ordered_players)
 
-        # Choose the player who will move first based on the rules of the game:
+        cls.choose_first_player(bottom_card.suit, ordered_players, player_hands)
+
+        return GameState(ordered_players, player_hands, [], deck, [], bottom_card)
+
+    @staticmethod
+    def choose_first_player(trump_suit, players, player_hands):
+        # Put the player that should move first at the beginning of the array in accorance to the rules of the game:
         # * choose the player who has the trump card of the lowest rank,
         # * if no one has trump cards, choose a player with who has a card with the lowest rank
 
-        if True:
-            trump_suit = bottom_card.suit
+        i_start = None
 
-            i_start = None
+        min_value = 1000
 
-            min_value = 1000
+        for i, (uid, name) in enumerate(players):
+            for card in player_hands[uid]:
+                card_value = (card.suit != trump_suit) * 100 + Card.ranks.index(card.rank)
 
-            for i, (uid, name) in enumerate(ordered_players):
-                for card in player_hands[uid]:
-                    card_value = (card.suit != trump_suit) * 100 + Card.ranks.index(card.rank)
+                if card_value < min_value:
+                    min_value = card_value
+                    i_start = i
 
-                    if card_value < min_value:
-                        min_value = card_value
-                        i_start = i
-
-            ordered_players[0], ordered_players[i_start] = ordered_players[i_start], ordered_players[0]
-
-        return GameState(ordered_players, player_hands, [], deck, [], bottom_card)
+        players[0], players[i_start] = players[i_start], players[0]
 
     def as_dict_for_player(self, player_uid):
         i_player = None
