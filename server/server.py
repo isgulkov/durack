@@ -43,6 +43,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     matchmaking_pool = set()
     current_games = set()
 
+    MIN_NUM_PLAYERS = 2 # TODO: Apply some logic to it
+
     def get_compression_options(self):
         # Non-None enables compression with default options.
         return {}
@@ -198,11 +200,10 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
         GameSocketHandler.update_num_looking_for_game()
 
-        # TODO: differentiate by number of players
-        if len(GameSocketHandler.matchmaking_pool) >= 5:
+        if len(GameSocketHandler.matchmaking_pool) >= GameSocketHandler.MIN_NUM_PLAYERS:
             new_players = []
 
-            for i in xrange(5):
+            while len(new_players) < 6 and len(GameSocketHandler.matchmaking_pool) != 0:
                 new_players.append(GameSocketHandler.matchmaking_pool.pop())
 
             GameSocketHandler.initialize_game(new_players)
