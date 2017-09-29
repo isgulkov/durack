@@ -225,144 +225,192 @@ cardSpritesImg.src = 'img/cards.gif';
     };
 
     CanvasRenderingContext2D.prototype.displayGameState = function(gameState) {
-        this.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
+        if(gameState !== undefined) {
+            this.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
 
-        this.drawPlayersHand(gameState.playerHand);
+            this.drawPlayersHand(gameState.playerHand);
 
-        this.drawCardsOnTable(gameState.tableStacks);
+            this.drawCardsOnTable(gameState.tableStacks);
 
-        this.drawOpponentHands(gameState.opponents);
+            this.drawOpponentHands(gameState.opponents);
 
-        this.drawLeftoverStack(gameState.leftoverStackSize, gameState.bottomCard);
+            this.drawLeftoverStack(gameState.leftoverStackSize, gameState.bottomCard);
 
-        this.drawPlayedStack(gameState.playedStackSize);
+            this.drawPlayedStack(gameState.playedStackSize);
+        }
     };
 }());
 
-var initialState = {
-    numPlayers: 6,
+var uiStore = (function() {
+    var initialGameState = {
+        numPlayers: 6,
 
-    currentPhase: 'init',
-    currentActor: 1,
+        currentPhase: 'init',
+        currentActor: 1,
 
-    playerHand: [
-        {suit: 'spades', value: '10'},
-        {suit: 'hearts', value: 'A'},
-        {suit: 'clubs', value: 'Q'},
-        {suit: 'clubs', value: '7'},
-        {suit: 'hearts', value: '8'},
-        {suit: 'diamonds', value: '8'},
-        {suit: 'spades', value: '10'},
-        {suit: 'hearts', value: 'A'},
-        {suit: 'clubs', value: 'Q'},
-        {suit: 'clubs', value: '7'},
-        {suit: 'hearts', value: '8'},
-        {suit: 'diamonds', value: '8'},
-        {suit: 'spades', value: '10'},
-        {suit: 'hearts', value: 'A'},
-        {suit: 'clubs', value: 'Q'},
-        {suit: 'clubs', value: '7'},
-        {suit: 'hearts', value: '8'},
-        {suit: 'diamonds', value: '8'}
-    ],
+        playerHand: [
+            {suit: 'spades', value: '10'},
+            {suit: 'hearts', value: 'A'},
+            {suit: 'clubs', value: 'Q'},
+            {suit: 'clubs', value: '7'},
+            {suit: 'hearts', value: '8'},
+            {suit: 'diamonds', value: '8'},
+            {suit: 'spades', value: '10'},
+            {suit: 'hearts', value: 'A'},
+            {suit: 'clubs', value: 'Q'},
+            {suit: 'clubs', value: '7'},
+            {suit: 'hearts', value: '8'},
+            {suit: 'diamonds', value: '8'},
+            {suit: 'spades', value: '10'},
+            {suit: 'hearts', value: 'A'},
+            {suit: 'clubs', value: 'Q'},
+            {suit: 'clubs', value: '7'},
+            {suit: 'hearts', value: '8'},
+            {suit: 'diamonds', value: '8'}
+        ],
 
-    tableStacks: [
-        {
-            top: {suit: 'spades', value: '10'},
-            bottom: {suit: 'hearts', value: 'A'}
-        },
-        {
-            top: {suit: 'clubs', value: 'Q'},
-            bottom: {suit: 'clubs', value: '7'}
-        },
-        {
-            top: {suit: 'spades', value: '10'},
-            bottom: {suit: 'hearts', value: 'A'}
-        },
-        {
-            top: {suit: 'clubs', value: 'Q'},
-            bottom: {suit: 'clubs', value: '7'}
-        },
-        {
-            top: {suit: 'spades', value: '10'},
-            bottom: {suit: 'hearts', value: 'A'}
-        },
-        {
-            top: {suit: 'clubs', value: 'Q'},
-            bottom: {suit: 'clubs', value: '7'}
-        },
-        {
-            top: {suit: 'spades', value: '10'},
-            bottom: {suit: 'hearts', value: 'A'}
-        },
-        {
-            top: {suit: 'clubs', value: 'Q'},
-            bottom: {suit: 'clubs', value: '7'}
-        },
-        {
-            top: {suit: 'spades', value: '10'},
-            bottom: {suit: 'hearts', value: 'A'}
-        },
-        {
-            top: {suit: 'clubs', value: 'Q'},
-            bottom: {suit: 'clubs', value: '7'}
-        },
-        {
-            top: {suit: 'hearts', value: '8'}
-        },
-        {
-            top: {suit: 'diamonds', value: '8'}
-        }
-    ],
+        tableStacks: [
+            {
+                top: {suit: 'spades', value: '10'},
+                bottom: {suit: 'hearts', value: 'A'}
+            },
+            {
+                top: {suit: 'clubs', value: 'Q'},
+                bottom: {suit: 'clubs', value: '7'}
+            },
+            {
+                top: {suit: 'spades', value: '10'},
+                bottom: {suit: 'hearts', value: 'A'}
+            },
+            {
+                top: {suit: 'clubs', value: 'Q'},
+                bottom: {suit: 'clubs', value: '7'}
+            },
+            {
+                top: {suit: 'spades', value: '10'},
+                bottom: {suit: 'hearts', value: 'A'}
+            },
+            {
+                top: {suit: 'clubs', value: 'Q'},
+                bottom: {suit: 'clubs', value: '7'}
+            },
+            {
+                top: {suit: 'spades', value: '10'},
+                bottom: {suit: 'hearts', value: 'A'}
+            },
+            {
+                top: {suit: 'clubs', value: 'Q'},
+                bottom: {suit: 'clubs', value: '7'}
+            },
+            {
+                top: {suit: 'spades', value: '10'},
+                bottom: {suit: 'hearts', value: 'A'}
+            },
+            {
+                top: {suit: 'clubs', value: 'Q'},
+                bottom: {suit: 'clubs', value: '7'}
+            },
+            {
+                top: {suit: 'hearts', value: '8'}
+            },
+            {
+                top: {suit: 'diamonds', value: '8'}
+            }
+        ],
 
-    opponents: [
-        {nickname: 'pidor', numCards: 2},
-        {nickname: 'Григорий Козинов отсосал хуев корзину', numCards: 25},
-        {nickname: '|||/||//||///111', numCards: 15},
-        {nickname: '1ll1l1ll1l1lll11', numCards: 10},
-        {nickname: 'o priv', numCards: 18}
-    ],
+        opponents: [
+            {nickname: 'pidor', numCards: 2},
+            {nickname: 'Григорий Козинов отсосал хуев корзину', numCards: 25},
+            {nickname: '|||/||//||///111', numCards: 15},
+            {nickname: '1ll1l1ll1l1lll11', numCards: 10},
+            {nickname: 'o priv', numCards: 18}
+        ],
 
-    leftoverStackSize: 2,
-    bottomCard: {suit: 'hearts', value: 'A'},
+        leftoverStackSize: 2,
+        bottomCard: {suit: 'hearts', value: 'A'},
 
-    playedStackSize: 10
-};
+        playedStackSize: 10
+    };
 
-var gameState = function(state, action) {
-    if(action.type === 'COME ON IT') {
-        var phase = state.currentPhase, actor = state.currentActor;
-
-        console.log(phase, actor);
-
-        if(phase === 'init') {
-            phase = 'follow';
-
-            actor += 1;
-            actor %= state.numPlayers;
-        }
-        else {
-            phase = 'init'
-        }
-
-        console.log(phase, actor);
-
+    var fUiState = function(state, action) {
         return Object.assign({}, state, {
-            currentPhase: phase,
-            currentActor: actor
+            game: fGame(state.game, action),
+            menu: fMenu(state.menu, action)
         });
-    }
+    };
 
-    return state;
+    var fGame = function(state, action) {
+        if(action.type === 'START GAME') {
+            console.log("hui");
+            return initialGameState;
+        }
+
+        if(state === undefined) {
+            return undefined
+        }
+
+        if(action.type === 'COME ON IT') {
+            var phase = state.currentPhase, actor = state.currentActor;
+
+            console.log(phase, actor);
+
+            if(phase === 'init') {
+                phase = 'follow';
+
+                actor += 1;
+                actor %= state.numPlayers;
+            }
+            else {
+                phase = 'init'
+            }
+
+            console.log(phase, actor);
+
+            return Object.assign({}, state, {
+                currentPhase: phase,
+                currentActor: actor
+            });
+        }
+
+        return state;
+    };
+
+    var fMenu = function(state, action) {
+        if(action.type === 'START GAME') {
+            return Object.assign({}, state, {
+                displayed: false
+            });
+        }
+
+        return state;
+    };
+
+    return Redux.createStore(fUiState, {
+        game: undefined,
+        menu: {
+            displayed: true
+        }
+    });
+}());
+
+var handleMenuUpdate = function() {
+    if(uiStore.getState().menu.displayed) {
+        document.getElementById('menu_container').style.display = 'block';
+    }
+    else {
+        document.getElementById('menu_container').style.display = 'none';
+    }
 };
 
-var gameStore = Redux.createStore(gameState, initialState);
-
-gameStore.subscribe(function() {
+var handleGameUpdate = function() {
     window.requestAnimationFrame(function(t) {
-        gameStore.ctx.displayGameState(gameStore.getState());
+        console.log(uiStore.getState().game);
+        handleGameUpdate.ctx.displayGameState(uiStore.getState().game);
     });
-});
+};
+
+uiStore.subscribe(handleMenuUpdate);
+uiStore.subscribe(handleGameUpdate);
 
 document.addEventListener('DOMContentLoaded', function() {
     cardSpritesImg.addEventListener('load', function() {
@@ -372,20 +420,25 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.canvasWidth = canvas.width;
         ctx.canvasHeight = canvas.height;
 
-        gameStore.ctx = ctx; // TODO: put somewhere else
+        handleGameUpdate.ctx = ctx; // TODO: put somewhere else still
 
         window.requestAnimationFrame(function() {
-            window.requestAnimationFrame(function(t) {
-                gameStore.ctx.displayGameState(gameStore.getState());
-            });
+            handleMenuUpdate();
+            handleGameUpdate();
         });
+
+        document.getElementById('find_game').onclick = function() {
+            uiStore.dispatch({
+                type: 'START GAME'
+            });
+        };
 
         var socket = new WebSocket('ws://localhost:8888/game');
 
         socket.onmessage = function(event) {
             var action = JSON.parse(event.data);
 
-            gameStore.dispatch(action);
+            uiStore.dispatch(action);
         };
 
         // TODO: restructure with ES6 imports using Babel
