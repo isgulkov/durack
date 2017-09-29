@@ -298,6 +298,9 @@ var uiStore = (function() {
             if(action.type === 'LOOKING FOR GAME') {
                 return 'looking';
             }
+            else if(action.type === 'STOPPED LOOKING FOR GAME') {
+                return 'initial';
+            }
             if(action.type === 'INITIALIZE GAME') {
                 return 'in game';
             }
@@ -378,6 +381,12 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('find_game').onclick = function() {
             socket.send(JSON.stringify({
                 action: 'FIND GAME'
+            }));
+        };
+
+        document.getElementById('cancel_find_game').onclick = function() {
+            socket.send(JSON.stringify({
+                action: 'CANCEL FIND GAME'
             }));
         };
 

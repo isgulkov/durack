@@ -40,7 +40,7 @@ class MainHandler(tornado.web.RequestHandler):
 
 
 class GameSocketHandler(tornado.websocket.WebSocketHandler):
-    looking_for_game = set()
+    matchmaking_pool = set()
     current_games = set()
 
     def get_compression_options(self):
@@ -56,24 +56,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         return True # TODO: remove
 
     def on_close(self):
-        if self in GameSocketHandler.looking_for_game:
-            if self in GameSocketHandler.looking_for_game:
-                GameSocketHandler.looking_for_game.remove(self)
-
-                logging.info("%s is no longer looking for game (currently %d total)"
-                             % (self, len(GameSocketHandler.looking_for_game)))
-
-                GameSocketHandler.update_num_looking_for_game()
-
-    @classmethod
-    def send_periodic_shit(cls):
-        logging.info("sending message to %d waiters", len(cls.looking_for_game))
-
-        for waiter in cls.looking_for_game:
-            try:
-                waiter.write_message({'type': 'COME ON IT'})
-            except:
-                logging.error("Error sending message", exc_info=True)
+        if self in GameSocketHandler.matchmaking_pool:
+            GameSocketHandler.remove_from_matchmaking_pool(self)
 
     @classmethod
     def initialize_game(self, players):
@@ -175,35 +159,51 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def update_num_looking_for_game(cls):
-        for p in cls.looking_for_game:
+        for p in cls.matchmaking_pool:
             p.write_message(json.dumps({
                 'type': 'UPDATE NUM LOOKING FOR GAME',
-                'num': len(cls.looking_for_game)
+                'num': len(cls.matchmaking_pool)
             }))
+
+    @classmethod
+    def remove_from_matchmaking_pool(cls, p):
+        if p in GameSocketHandler.matchmaking_pool:
+            GameSocketHandler.matchmaking_pool.remove(p)
+
+            logging.info("%s is no longer looking for game (currently %d total)"
+                         % (p, len(GameSocketHandler.matchmaking_pool)))
+
+            GameSocketHandler.update_num_looking_for_game()
 
     def on_message(self, message):
         msg = json.loads(message)
 
         if msg['action'] == 'FIND GAME':
             self.find_game()
+        elif msg['action'] == 'CANCEL FIND GAME':
+            GameSocketHandler.remove_from_matchmaking_pool(self)
+
+            self.write_message(json.dumps({
+                'type': 'STOPPED LOOKING FOR GAME'
+            }))
 
     def find_game(self):
-        GameSocketHandler.looking_for_game.add(self)
+        GameSocketHandler.matchmaking_pool.add(self)
 
         self.write_message(json.dumps({
             'type': 'LOOKING FOR GAME'
         }))
 
-        logging.info("%s looking for game (currently %d total)" % (self, len(GameSocketHandler.looking_for_game)))
+        logging.info("%s looking for game (currently %d total)" % (self, len(GameSocketHandler.matchmaking_pool)))
 
         GameSocketHandler.update_num_looking_for_game()
 
         # TODO: differentiate by number of players
-        if len(GameSocketHandler.looking_for_game) >= 5:
+        if len(GameSocketHandler.matchmaking_pool) >= 5:
             new_players = []
 
             for i in xrange(5):
-                new_players.append(GameSocketHandler.looking_for_game.pop())
+                new_players.append(GameSocketHandler.matchmaking_pool.pop())
 
             GameSocketHandler.initialize_game(new_players)
 
