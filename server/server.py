@@ -1,17 +1,19 @@
 import logging
 import os.path
 import json
+import uuid
 
 import tornado.escape
 import tornado.ioloop
 import tornado.options
 import tornado.web
 import tornado.websocket
-import uuid
 
 from tornado.options import define, options
 
 define("port", default=8888, help="run on the given port", type=int)
+
+from mechanics import GameState
 
 
 class Application(tornado.web.Application):
@@ -41,7 +43,8 @@ class MainHandler(tornado.web.RequestHandler):
 
 class GameSocketHandler(tornado.websocket.WebSocketHandler):
     matchmaking_pool = set()
-    current_games = set()
+
+    game_for_player = {}
 
     MIN_NUM_PLAYERS = 2 # TODO: Apply some logic to it
 
@@ -51,6 +54,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
         logging.info("%s connected", self)
+
+        # TODO: make games persistent between connections (uuid cookie, initialize)
 
         pass
 
@@ -62,101 +67,16 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             self.remove_from_matchmaking_pool(self)
 
     @classmethod
-    def initialize_game(self, players):
-        dummy_state = {
-            'numPlayers': 6,
+    def initialize_game(self, player_connections):
+        new_state = GameState.random_state([(p, "pidor") for p in player_connections])
 
-            'currentPhase': 'init',
-            'currentActor': 1,
+        for p in player_connections:
+            self.game_for_player[p] = new_state
 
-            'playerHand': [
-                {'suit': 'spades', 'value': '10'},
-                {'suit': 'hearts', 'value': 'A'},
-                {'suit': 'clubs', 'value': 'Q'},
-                {'suit': 'clubs', 'value': '7'},
-                {'suit': 'hearts', 'value': '8'},
-                {'suit': 'diamonds', 'value': '8'},
-                {'suit': 'spades', 'value': '10'},
-                {'suit': 'hearts', 'value': 'A'},
-                {'suit': 'clubs', 'value': 'Q'},
-                {'suit': 'clubs', 'value': '7'},
-                {'suit': 'hearts', 'value': '8'},
-                {'suit': 'diamonds', 'value': '8'},
-                {'suit': 'spades', 'value': '10'},
-                {'suit': 'hearts', 'value': 'A'},
-                {'suit': 'clubs', 'value': 'Q'},
-                {'suit': 'clubs', 'value': '7'},
-                {'suit': 'hearts', 'value': '8'},
-                {'suit': 'diamonds', 'value': '8'}
-            ],
-
-            'tableStacks': [
-                {
-                    'top': {'suit': 'spades', 'value': '10'},
-                    'bottom': {'suit': 'hearts', 'value': 'A'}
-                },
-                {
-                    'top': {'suit': 'clubs', 'value': 'Q'},
-                    'bottom': {'suit': 'clubs', 'value': '7'}
-                },
-                {
-                    'top': {'suit': 'spades', 'value': '10'},
-                    'bottom': {'suit': 'hearts', 'value': 'A'}
-                },
-                {
-                    'top': {'suit': 'clubs', 'value': 'Q'},
-                    'bottom': {'suit': 'clubs', 'value': '7'}
-                },
-                {
-                    'top': {'suit': 'spades', 'value': '10'},
-                    'bottom': {'suit': 'hearts', 'value': 'A'}
-                },
-                {
-                    'top': {'suit': 'clubs', 'value': 'Q'},
-                    'bottom': {'suit': 'clubs', 'value': '7'}
-                },
-                {
-                    'top': {'suit': 'spades', 'value': '10'},
-                    'bottom': {'suit': 'hearts', 'value': 'A'}
-                },
-                {
-                    'top': {'suit': 'clubs', 'value': 'Q'},
-                    'bottom': {'suit': 'clubs', 'value': '7'}
-                },
-                {
-                    'top': {'suit': 'spades', 'value': '10'},
-                    'bottom': {'suit': 'hearts', 'value': 'A'}
-                },
-                {
-                    'top': {'suit': 'clubs', 'value': 'Q'},
-                    'bottom': {'suit': 'clubs', 'value': '7'}
-                },
-                {
-                    'top': {'suit': 'hearts', 'value': '8'}
-                },
-                {
-                    'top': {'suit': 'diamonds', 'value': '8'}
-                }
-            ],
-
-            'opponents': [
-                {'nickname': 'pidor', 'numCards': 2},
-                {'nickname': 'Grigory Kozinov otsosal huev korzinu', 'numCards': 25},
-                {'nickname': '|||/||//||///111', 'numCards': 15},
-                {'nickname': '1ll1l1ll1l1lll11', 'numCards': 10},
-                {'nickname': 'o priv', 'numCards': 18}
-            ],
-
-            'leftoverStackSize': 2,
-            'bottomCard': {'suit': 'hearts', 'value': 'A'},
-
-            'playedStackSize': 10
-        }
-
-        for p in players:
-            p.write_message(json.dumps({
+        for connection, name in new_state.players:
+            connection.write_message(json.dumps({
                 'type': 'INITIALIZE GAME',
-                'init_state': dummy_state
+                'init_state': new_state.as_dict_for_player(connection)
             }))
 
     @classmethod

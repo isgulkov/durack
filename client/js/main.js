@@ -21,7 +21,7 @@ cardSpritesImg.src = 'img/cards.gif';
         }
         else {
             var y = CARD_HEIGHT * ['hearts', 'diamonds', 'clubs', 'spades'].indexOf(card.suit);
-            var x = CARD_WIDTH * ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'].indexOf(card.value);
+            var x = CARD_WIDTH * ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'].indexOf(card.rank);
 
             return {
                 x: x,
@@ -165,6 +165,7 @@ cardSpritesImg.src = 'img/cards.gif';
 
             for(var j = handSize - 1; j >= 0; j--) {
                 this.drawCard('back', center.x - handWidth / 2 + cardSpacing * j, center.y - CARD_HEIGHT / 2);
+                console.log(center.x - handWidth / 2 + cardSpacing * j);
             }
 
             var nickname = opponentHands[i].nickname;
@@ -254,8 +255,6 @@ var uiStore = (function() {
         if(action.type === 'COME ON IT') {
             var phase = state.currentPhase, actor = state.currentActor;
 
-            console.log(phase, actor);
-
             if(phase === 'init') {
                 phase = 'follow';
 
@@ -265,8 +264,6 @@ var uiStore = (function() {
             else {
                 phase = 'init'
             }
-
-            console.log(phase, actor);
 
             return Object.assign({}, state, {
                 currentPhase: phase,
@@ -338,8 +335,6 @@ var uiStore = (function() {
 var handleMenuUpdate = function() {
     var menuState = uiStore.getState().menu;
 
-    console.log(menuState);
-
     document.getElementById('menu_container').style.display = menuState.displayed ? 'block' : 'none';
 
     if(menuState.status === 'looking') {
@@ -353,7 +348,6 @@ var handleMenuUpdate = function() {
 
 var handleGameUpdate = function() {
     window.requestAnimationFrame(function(t) {
-        console.log(uiStore.getState().game);
         handleGameUpdate.ctx.displayGameState(uiStore.getState().game);
     });
 };
