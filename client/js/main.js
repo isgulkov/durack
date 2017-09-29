@@ -225,7 +225,7 @@ cardSpritesImg.src = 'img/cards.gif';
     };
 
     CanvasRenderingContext2D.prototype.displayGameState = function(gameState) {
-        if(gameState !== undefined) {
+        if(gameState !== 'no game') {
             this.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
 
             this.drawPlayersHand(gameState.playerHand);
@@ -242,111 +242,13 @@ cardSpritesImg.src = 'img/cards.gif';
 }());
 
 var uiStore = (function() {
-    var initialGameState = {
-        numPlayers: 6,
-
-        currentPhase: 'init',
-        currentActor: 1,
-
-        playerHand: [
-            {suit: 'spades', value: '10'},
-            {suit: 'hearts', value: 'A'},
-            {suit: 'clubs', value: 'Q'},
-            {suit: 'clubs', value: '7'},
-            {suit: 'hearts', value: '8'},
-            {suit: 'diamonds', value: '8'},
-            {suit: 'spades', value: '10'},
-            {suit: 'hearts', value: 'A'},
-            {suit: 'clubs', value: 'Q'},
-            {suit: 'clubs', value: '7'},
-            {suit: 'hearts', value: '8'},
-            {suit: 'diamonds', value: '8'},
-            {suit: 'spades', value: '10'},
-            {suit: 'hearts', value: 'A'},
-            {suit: 'clubs', value: 'Q'},
-            {suit: 'clubs', value: '7'},
-            {suit: 'hearts', value: '8'},
-            {suit: 'diamonds', value: '8'}
-        ],
-
-        tableStacks: [
-            {
-                top: {suit: 'spades', value: '10'},
-                bottom: {suit: 'hearts', value: 'A'}
-            },
-            {
-                top: {suit: 'clubs', value: 'Q'},
-                bottom: {suit: 'clubs', value: '7'}
-            },
-            {
-                top: {suit: 'spades', value: '10'},
-                bottom: {suit: 'hearts', value: 'A'}
-            },
-            {
-                top: {suit: 'clubs', value: 'Q'},
-                bottom: {suit: 'clubs', value: '7'}
-            },
-            {
-                top: {suit: 'spades', value: '10'},
-                bottom: {suit: 'hearts', value: 'A'}
-            },
-            {
-                top: {suit: 'clubs', value: 'Q'},
-                bottom: {suit: 'clubs', value: '7'}
-            },
-            {
-                top: {suit: 'spades', value: '10'},
-                bottom: {suit: 'hearts', value: 'A'}
-            },
-            {
-                top: {suit: 'clubs', value: 'Q'},
-                bottom: {suit: 'clubs', value: '7'}
-            },
-            {
-                top: {suit: 'spades', value: '10'},
-                bottom: {suit: 'hearts', value: 'A'}
-            },
-            {
-                top: {suit: 'clubs', value: 'Q'},
-                bottom: {suit: 'clubs', value: '7'}
-            },
-            {
-                top: {suit: 'hearts', value: '8'}
-            },
-            {
-                top: {suit: 'diamonds', value: '8'}
-            }
-        ],
-
-        opponents: [
-            {nickname: 'pidor', numCards: 2},
-            {nickname: 'Григорий Козинов отсосал хуев корзину', numCards: 25},
-            {nickname: '|||/||//||///111', numCards: 15},
-            {nickname: '1ll1l1ll1l1lll11', numCards: 10},
-            {nickname: 'o priv', numCards: 18}
-        ],
-
-        leftoverStackSize: 2,
-        bottomCard: {suit: 'hearts', value: 'A'},
-
-        playedStackSize: 10
-    };
-
-    var fUiState = function(state, action) {
-        return Object.assign({}, state, {
-            game: fGame(state.game, action),
-            menu: fMenu(state.menu, action)
-        });
-    };
-
     var fGame = function(state, action) {
-        if(action.type === 'START GAME') {
-            console.log("hui");
-            return initialGameState;
+        if(state === undefined) {
+            return 'no game'
         }
 
-        if(state === undefined) {
-            return undefined
+        if(action.type === 'INITIALIZE GAME') {
+            return action.init_state;
         }
 
         if(action.type === 'COME ON IT') {
@@ -375,31 +277,57 @@ var uiStore = (function() {
         return state;
     };
 
-    var fMenu = function(state, action) {
-        if(action.type === 'START GAME') {
-            return Object.assign({}, state, {
-                displayed: false
-            });
-        }
+    var fMenu = function() {
+        var fDisplayed = function(state, action) {
+            if(state === undefined) {
+                return true;
+            }
 
-        return state;
-    };
+            if(action.type === 'INITIALIZE GAME') {
+                return false;
+            }
 
-    return Redux.createStore(fUiState, {
-        game: undefined,
-        menu: {
-            displayed: true
-        }
+            return state;
+        };
+
+        var fStatus = function(state, action) {
+            if(state === undefined) {
+                return 'initial';
+            }
+
+            if(action.type === 'LOOKING FOR GAME') {
+                return 'looking';
+            }
+            if(action.type === 'INITIALIZE GAME') {
+                return 'in game';
+            }
+
+            return state;
+        };
+
+        return Redux.combineReducers({
+            displayed: fDisplayed,
+            status: fStatus
+        })
+    }();
+
+    var fUiState = Redux.combineReducers({
+        game: fGame,
+        menu: fMenu
     });
+
+    return Redux.createStore(fUiState);
 }());
 
 var handleMenuUpdate = function() {
-    if(uiStore.getState().menu.displayed) {
-        document.getElementById('menu_container').style.display = 'block';
-    }
-    else {
-        document.getElementById('menu_container').style.display = 'none';
-    }
+    var menuState = uiStore.getState().menu;
+
+    console.log(menuState);
+
+    document.getElementById('menu_container').style.display = menuState.displayed ? 'block' : 'none';
+
+    document.getElementById('message_looking_for_game').style.display
+        = (menuState.status === 'looking') ? 'block' : 'none';
 };
 
 var handleGameUpdate = function() {
