@@ -1,6 +1,7 @@
 from random import SystemRandom
 
-def urandom_shuffle(xs):
+
+def urandom_shuffle_inplace(xs):
     # Knuth shuffle
 
     rnd = SystemRandom()
@@ -9,6 +10,29 @@ def urandom_shuffle(xs):
         j = rnd.randint(i, len(xs) - 1)
 
         xs[i], xs[j] = xs[j], xs[i]
+
+
+def urandom_shuffled(xs):
+    # "Inside-out" Knuth shuffle
+
+    rnd = SystemRandom()
+
+    result = []
+
+    try:
+        result.append(next(xs))
+    except StopIteration:
+        return []
+
+    for i, x in enumerate(xs):
+        result.append(x)
+
+        j = rnd.randint(0, i)
+
+        result[i], result[j] = result[j], result[i]
+
+    return result
+
 
 class Card:
     suits = ('hearts', 'diamonds', 'clubs', 'spades')
@@ -22,11 +46,7 @@ class Card:
 
     @classmethod
     def _get_shuffled_deck(cls):
-        deck = list(cls.all_cards())
-
-        urandom_shuffle(deck)
-
-        return deck
+        return urandom_shuffled(cls.all_cards())
 
     def __init__(self, suit, rank):
         if suit not in self.suits:
@@ -79,7 +99,7 @@ class GameState:
             player_hands[uid] = hand # TODO: index by position in order?
 
         ordered_players = list(players)
-        urandom_shuffle(ordered_players)
+        urandom_shuffle_inplace(ordered_players)
 
         # Choose the player who will move first based on the rules of the game:
         # * choose the player who has the trump card of the lowest rank,
