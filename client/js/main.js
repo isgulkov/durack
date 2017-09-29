@@ -108,6 +108,7 @@ cardSpritesImg.src = 'img/cards.gif';
             this.restore();
         }
     };
+
     CanvasRenderingContext2D.prototype.drawCard = function(card, x, y, horizontal) {
         var offset = getCardSpriteOffset(card);
 
@@ -168,6 +169,7 @@ cardSpritesImg.src = 'img/cards.gif';
             }
         }
     };
+
     CanvasRenderingContext2D.prototype.drawOpponentHands = function(opponentHands) {
         var opponentHandCenters = getOpponentHandCenters(opponentHands.length + 1);
 
@@ -211,6 +213,7 @@ cardSpritesImg.src = 'img/cards.gif';
             this.restore();
         }
     };
+
     CanvasRenderingContext2D.prototype.drawLeftoverStack = function(stackSize, bottomCard) {
         var additionalOffset = 2 * Math.max(0, stackSize - 15);
 
@@ -230,6 +233,7 @@ cardSpritesImg.src = 'img/cards.gif';
             this.drawCard('back', 508 + 2 * i - additionalOffset, -135, true);
         }
     };
+
     CanvasRenderingContext2D.prototype.drawPlayedStack = function(stackSize) {
         stackSize = Math.min(30, stackSize);
 
@@ -241,6 +245,8 @@ cardSpritesImg.src = 'img/cards.gif';
     };
 
     CanvasRenderingContext2D.prototype.displayGameState = function(gameState) {
+        this.clickAreas = [];
+
         if(gameState !== 'no game') {
             this.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
 
@@ -253,6 +259,29 @@ cardSpritesImg.src = 'img/cards.gif';
             this.drawLeftoverStack(gameState.leftoverStackSize, gameState.bottomCard);
 
             this.drawPlayedStack(gameState.playedStackSize);
+
+            // TODO: move out of this method, assign once
+
+            var ctx = this;
+
+            this.canvas.onclick = function(e) {
+                var x = e.clientX - this.offsetLeft;
+                var y = e.clientY - this.offsetTop;
+
+                for(var i = ctx.clickAreas.length - 1; i >= 0; i--) {
+                    var area = ctx.clickAreas[i];
+
+                    if(x >= area.x && y >= area.y && x <= area.x + area.w && y <= area.y + area.h) {
+                        if(ctx.clickHandlers !== undefined) {
+                            ctx.clickHandlers.forEach(function(handler) {
+                                handler(area.message);
+                            });
+                        }
+
+                        break;
+                    }
+                }
+            }
         }
     };
 }());
@@ -375,7 +404,12 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
 
     var socket = new WebSocket('ws://localhost:8888/game');
 
-    handleGameUpdate.ctx = ctx; // TODO: put somewhere else still
+    handleGameUpdate.ctx = ctx; // TODO: put somewhere else
+
+    ctx.clickHandlers = []; // TODO: move somewhere else
+    ctx.clickHandlers.push(function(message) {
+        console.log(message);
+    });
 
     window.requestAnimationFrame(function() {
         handleMenuUpdate();
