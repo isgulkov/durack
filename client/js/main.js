@@ -71,7 +71,7 @@ cardSpritesImg.src = 'img/cards.gif';
         // Windows Solitaire bg color
         // this.fillStyle = '#008000';
 
-        this.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+        this.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         if(currentActor !== undefined) {
             this.save();
@@ -92,7 +92,7 @@ cardSpritesImg.src = 'img/cards.gif';
             this.beginPath();
 
             if(currentActor === 0) {
-                this.arc(this.canvasWidth / 2, this.canvasHeight + 300, 500, 0, Math.PI, true);
+                this.arc(this.canvas.width / 2, this.canvas.height + 300, 500, 0, Math.PI, true);
             }
             else {
                 var opponentCenters = getOpponentHandCenters(numPlayers);
@@ -123,21 +123,37 @@ cardSpritesImg.src = 'img/cards.gif';
             this.restore();
         }
     };
+
     CanvasRenderingContext2D.prototype.drawPlayersHand = function(playerCards) {
         var cardSpacing = Math.min(600 / playerCards.length, CARD_WIDTH + 10);
 
         var handWidth = cardSpacing * (playerCards.length - 1) + CARD_WIDTH;
 
-        var totalLeftOffset = (this.canvasWidth - handWidth) / 2;
+        var totalLeftOffset = (this.canvas.width - handWidth) / 2;
 
         for(var i = 0; i < playerCards.length; i++) {
-            this.drawCard(playerCards[i], totalLeftOffset + cardSpacing * i, this.canvasHeight - CARD_HEIGHT - 50);
+            var xOffset = totalLeftOffset + cardSpacing * i;
+            var yOffset = this.canvas.height - CARD_HEIGHT - 50;
+
+            this.drawCard(playerCards[i], xOffset, yOffset);
+
+            this.clickAreas.push({
+                x: xOffset,
+                y: yOffset,
+                w: CARD_WIDTH,
+                h: CARD_HEIGHT,
+                message: {
+                    target: 'card',
+                    data: playerCards[i]
+                }
+            });
         }
     };
+
     CanvasRenderingContext2D.prototype.drawCardsOnTable = function(tableStacks) {
         var stackSpacing = Math.min(CARD_WIDTH + 20, (550 - CARD_WIDTH) / tableStacks.length);
 
-        var totalLeftOffset = (this.canvasWidth - stackSpacing * (tableStacks.length)) / 2;
+        var totalLeftOffset = (this.canvas.width - stackSpacing * (tableStacks.length)) / 2;
         var topOffset = 225;
 
         for(var i = 0; i < tableStacks.length; i++) {
@@ -165,7 +181,6 @@ cardSpritesImg.src = 'img/cards.gif';
 
             for(var j = handSize - 1; j >= 0; j--) {
                 this.drawCard('back', center.x - handWidth / 2 + cardSpacing * j, center.y - CARD_HEIGHT / 2);
-                console.log(center.x - handWidth / 2 + cardSpacing * j);
             }
 
             var nickname = opponentHands[i].nickname;
@@ -221,7 +236,7 @@ cardSpritesImg.src = 'img/cards.gif';
         var cardSpacing = Math.min(10, 80 / stackSize);
 
         for(var i = 0; i < stackSize; i++) {
-            this.drawCard('back', this.canvasWidth - CARD_WIDTH - 5 - cardSpacing * i, this.canvasHeight - CARD_HEIGHT + 10);
+            this.drawCard('back', this.canvas.width - CARD_WIDTH - 5 - cardSpacing * i, this.canvas.height - CARD_HEIGHT + 10);
         }
     };
 
@@ -357,9 +372,6 @@ uiStore.subscribe(handleGameUpdate);
 
 var initializeProgram = function() {var canvas = document.getElementById('main_canvas');
     var ctx = canvas.getContext('2d');
-
-    ctx.canvasWidth = canvas.width;
-    ctx.canvasHeight = canvas.height;
 
     var socket = new WebSocket('ws://localhost:8888/game');
 
