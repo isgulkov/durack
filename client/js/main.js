@@ -244,6 +244,87 @@ cardSpritesImg.src = 'img/cards.gif';
         }
     };
 
+    CanvasRenderingContext2D.prototype.drawBigButton = function(text, message) {
+        this.save();
+
+        var x = (this.canvas.width - 200) / 2;
+        var y = this.canvas.height - 200;
+
+        var width = 200;
+        var height = 40;
+
+        this.globalAlpha = 0.4;
+
+        this.fillStyle = 'white';
+        this.fillRect(x, y, width, height);
+
+        this.globalAlpha = 1.0;
+
+        this.fillStyle = 'black';
+        this.font = '25px Georgia, serif';
+        this.textAlign = 'center';
+        this.textBaseline = 'middle';
+
+        this.fillText(
+            text,
+            x + width / 2,
+            y + height / 2
+        );
+
+        this.clickAreas.push({
+            x: x,
+            y: y,
+            w: width,
+            h: height,
+            message: message
+        });
+
+        this.restore();
+    };
+
+    CanvasRenderingContext2D.prototype.drawButtons = function(gameState) {
+        if(gameState.currentPhase === 'follow' && gameState.currentActor === 0) {
+            this.drawBigButton("Забрать", {
+                target: 'button',
+                data: 'take'
+            });
+        }
+        else if(gameState.currentPhase === 'init' && gameState.currentActor === 0) {
+            // TODO: implement this behavior for follow-ups
+
+            var followPossible = false;
+
+            for(var i = 0; i < gameState.playerHand.length; i++) {
+                var playerCard = gameState.playerHand[i];
+
+                for(var j = 0; j < gameState.tableStacks.length; j++) {
+                    var stack = gameState.tableStacks[j];
+
+                    if(playerCard.rank === stack.top.rank) {
+                        followPossible = true;
+                        break;
+                    }
+
+                    if(stack.bottom !== undefined && playerCard.rank === stack.bottom.rank) {
+                        followPossible = true;
+                        break;
+                    }
+                }
+
+                if(followPossible) {
+                    break;
+                }
+            }
+
+            if(followPossible) {
+                this.drawBigButton("Закончить ход", {
+                    target: 'button',
+                    data: 'end_move'
+                });
+            }
+        }
+    };
+
     CanvasRenderingContext2D.prototype.displayGameState = function(gameState) {
         this.clickAreas = [];
 
@@ -259,6 +340,8 @@ cardSpritesImg.src = 'img/cards.gif';
             this.drawLeftoverStack(gameState.leftoverStackSize, gameState.bottomCard);
 
             this.drawPlayedStack(gameState.playedStackSize);
+
+            this.drawButtons(gameState);
 
             // TODO: move out of this method, assign once
 
