@@ -355,41 +355,51 @@ var handleGameUpdate = function() {
 uiStore.subscribe(handleMenuUpdate);
 uiStore.subscribe(handleGameUpdate);
 
+var initializeProgram = function() {var canvas = document.getElementById('main_canvas');
+    var ctx = canvas.getContext('2d');
+
+    ctx.canvasWidth = canvas.width;
+    ctx.canvasHeight = canvas.height;
+
+    var socket = new WebSocket('ws://localhost:8888/game');
+
+    handleGameUpdate.ctx = ctx; // TODO: put somewhere else still
+
+    window.requestAnimationFrame(function() {
+        handleMenuUpdate();
+        handleGameUpdate();
+    });
+
+    document.getElementById('find_game').onclick = function() {
+        socket.send(JSON.stringify({
+            action: 'FIND GAME'
+        }));
+    };
+
+    document.getElementById('cancel_find_game').onclick = function() {
+        socket.send(JSON.stringify({
+            action: 'CANCEL FIND GAME'
+        }));
+    };
+
+    socket.onmessage = function(event) {
+        var action = JSON.parse(event.data);
+
+        uiStore.dispatch(action);
+    };
+
+    // TODO: process clicks
+    // TODO: issue moves
+
+    // TODO: nickname choice
+    // TODO: move timer
+
+    // TODO: terminology in state keys: stack -> deck
+    // TODO: restructure with ES6 imports using Babel
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     cardSpritesImg.addEventListener('load', function() {
-        var canvas = document.getElementById('main_canvas');
-        var ctx = canvas.getContext('2d');
-
-        ctx.canvasWidth = canvas.width;
-        ctx.canvasHeight = canvas.height;
-
-        var socket = new WebSocket('ws://localhost:8888/game');
-
-        handleGameUpdate.ctx = ctx; // TODO: put somewhere else still
-
-        window.requestAnimationFrame(function() {
-            handleMenuUpdate();
-            handleGameUpdate();
-        });
-
-        document.getElementById('find_game').onclick = function() {
-            socket.send(JSON.stringify({
-                action: 'FIND GAME'
-            }));
-        };
-
-        document.getElementById('cancel_find_game').onclick = function() {
-            socket.send(JSON.stringify({
-                action: 'CANCEL FIND GAME'
-            }));
-        };
-
-        socket.onmessage = function(event) {
-            var action = JSON.parse(event.data);
-
-            uiStore.dispatch(action);
-        };
-
-        // TODO: restructure with ES6 imports using Babel
+        initializeProgram();
     });
 });
