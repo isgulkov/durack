@@ -1,10 +1,12 @@
 import logging
+import os.path
+import json
+
 import tornado.escape
 import tornado.ioloop
 import tornado.options
 import tornado.web
 import tornado.websocket
-import os.path
 import uuid
 
 from tornado.options import define, options
@@ -20,10 +22,10 @@ class Application(tornado.web.Application):
         ]
 
         settings = dict(
-            cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
+            # cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
             template_path=os.path.join(os.path.dirname(__file__), "../client"),
             static_path=os.path.join(os.path.dirname(__file__), "../client"),
-            xsrf_cookies=True,
+            # xsrf_cookies=True,
         )
 
         super(Application, self).__init__(handlers, **settings)
@@ -42,6 +44,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     cache = []
     cache_size = 200
 
+    periodic_callback = None
+
     def get_compression_options(self):
         # Non-None enables compression with default options.
         return {}
@@ -49,18 +53,21 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     def open(self):
         logging.info("%s logged on", self)
 
-        GameSocketHandler.waiters.add(self)
+        pass
 
     def check_origin(self, origin):
-        return True
+        return True # TODO: remove
 
     def on_close(self):
-        GameSocketHandler.waiters.remove(self)
+        if self in GameSocketHandler.waiters:
+            GameSocketHandler.waiters.remove(self)
+
+        if len(GameSocketHandler.waiters) == 0:
+            self.periodic_callback.stop()
 
     @classmethod
     def send_periodic_shit(cls):
-        if len(cls.waiters) != 0:
-            logging.info("sending message to %d waiters", len(cls.waiters))
+        logging.info("sending message to %d waiters", len(cls.waiters))
 
         for waiter in cls.waiters:
             try:
@@ -69,7 +76,20 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 logging.error("Error sending message", exc_info=True)
 
     def on_message(self, message):
-        pass
+        msg = json.loads(message)
+
+        if msg['action'] == 'FIND GAME':
+            GameSocketHandler.waiters.add(self)
+
+            if self.periodic_callback is None:
+                self.periodic_callback = tornado.ioloop.PeriodicCallback(GameSocketHandler.send_periodic_shit, 1000)
+
+            if len(GameSocketHandler.waiters) == 1:
+                self.periodic_callback.start()
+
+            self.write_message(json.dumps({
+                'type': 'START GAME'
+            }))
 
     def data_received(self, chunk):
         pass
@@ -80,5 +100,4 @@ if __name__ == "__main__":
     app = Application()
     app.listen(options.port)
 
-    tornado.ioloop.PeriodicCallback(GameSocketHandler.send_periodic_shit, 100).start()
     tornado.ioloop.IOLoop.current().start()

@@ -420,6 +420,8 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.canvasWidth = canvas.width;
         ctx.canvasHeight = canvas.height;
 
+        var socket = new WebSocket('ws://localhost:8888/game');
+
         handleGameUpdate.ctx = ctx; // TODO: put somewhere else still
 
         window.requestAnimationFrame(function() {
@@ -428,12 +430,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         document.getElementById('find_game').onclick = function() {
-            uiStore.dispatch({
-                type: 'START GAME'
-            });
+            socket.send(JSON.stringify({
+                action: 'FIND GAME'
+            }));
         };
-
-        var socket = new WebSocket('ws://localhost:8888/game');
 
         socket.onmessage = function(event) {
             var action = JSON.parse(event.data);
