@@ -12,7 +12,7 @@ def urandom_shuffle(xs):
 
 class Card:
     suits = ('hearts', 'diamonds', 'clubs', 'spades')
-    ranks = ('A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K')
+    ranks = ('2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A')
 
     @classmethod
     def all_cards(cls):
@@ -79,8 +79,28 @@ class GameState:
             player_hands[uid] = hand # TODO: index by position in order?
 
         ordered_players = list(players)
+        urandom_shuffle(ordered_players)
 
-        urandom_shuffle(ordered_players) # TODO: choose first based on game rules
+        # Choose the player who will move first based on the rules of the game:
+        # * choose the player who has the trump card of the lowest rank,
+        # * if no one has trump cards, choose a player with who has a card with the lowest rank
+
+        if True:
+            trump_suit = bottom_card.suit
+
+            i_start = None
+
+            min_value = 1000
+
+            for i, (uid, name) in enumerate(ordered_players):
+                for card in player_hands[uid]:
+                    card_value = (card.suit != trump_suit) * 100 + Card.ranks.index(card.rank)
+
+                    if card_value < min_value:
+                        min_value = card_value
+                        i_start = i
+
+            ordered_players[0], ordered_players[i_start] = ordered_players[i_start], ordered_players[0]
 
         return GameState(ordered_players, player_hands, [], deck, [], bottom_card)
 
