@@ -34,6 +34,10 @@ def urandom_shuffled(xs):
     return result
 
 
+class IllegalMoveException(ValueError):
+    pass
+
+
 class Card:
     suits = ('hearts', 'diamonds', 'clubs', 'spades')
     ranks = ('2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A')
@@ -95,6 +99,8 @@ class GameState:
 
         self.bottom_card = bottom_card
 
+        self.message_handlers = set()
+
     # Creation
 
     @classmethod
@@ -154,6 +160,15 @@ class GameState:
 
     # Mutation
 
+    def process_move(self, player_uid, move):
+        if move['action'] == 'MOVE PUT':
+            if not self.apply_put_move(player_uid, Card(**move['card'])):
+                raise IllegalMoveException("Illegal move tralala") # TODO: add details
+        elif move['action'] == 'MOVE DEFEND':
+            pass
+        else:
+            raise ValueError("Unknown type of move `%s`" % move['action'])
+
     def _is_valid_put_move(self, player_uid, card):
         if (self.phase == 'init' and self.spotlight != player_uid) \
                 or (self.phase == 'follow' and self.spotlight == player_uid):
@@ -182,7 +197,7 @@ class GameState:
         :return: List of state deltas to be sent to each player
         """
         if not self._is_valid_put_move(player_uid, card):
-            return None
+            return False
 
         self.player_hands[player_uid].remove(card)
         self.table_stacks.append({
@@ -190,23 +205,28 @@ class GameState:
             'bottom': None
         })
 
-        deltas = [[{'type': 'STATE DELTA', 'delta': 'PUT ON TABLE', 'card': card.as_dict()}] for p in self.players]
+        for uid, name in self.players:
+            self.send_message(uid, {
+                'type': 'STATE DELTA', # TODO: get rid of this field ?
+                'change': 'PUT ON TABLE',
+                'card': card.as_dict()
+            })
 
         for i, (uid, name) in enumerate(self.players):
             if player_uid == uid:
-                deltas[i].append({
+                self.send_message(uid, {
                     'type': 'STATE DELTA',
-                    'delta': 'REMOVE FROM PLAYER HAND',
+                    'change': 'REMOVE FROM PLAYER HAND',
                     'card': card.as_dict()
                 })
             else:
-                deltas[i].append({
+                self.send_message(uid, {
                     'type': 'STATE DELTA',
-                    'delta': 'REMOVE FROM OPPONENT HAND',
+                    'change': 'REMOVE FROM OPPONENT HAND',
                     'i_opponent': self.relative_index_of_other_player(uid, player_uid) - 1
                 })
 
-        return deltas
+        return True
 
     def is_valid_defend_move(self, player_uid, card, i_stack):
         if self.phase != 'follow' or self.spotlight != player_uid:
@@ -227,6 +247,17 @@ class GameState:
             return True
 
         return False
+
+    # Reaction TODO: think of a better name, LOL
+
+    def add_message_handler(self, handler):
+        self.message_handlers.add(handler)
+
+        return lambda: self.message_handlers.remove(handler)
+
+    def send_message(self, player_uid, message):
+        for handler in self.message_handlers:
+            handler(player_uid, message)
 
     # Representation
 

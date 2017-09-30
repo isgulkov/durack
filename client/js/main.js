@@ -305,7 +305,7 @@ cardSpritesImg.src = 'img/cards.gif';
                         break;
                     }
 
-                    if(stack.bottom !== undefined && playerCard.rank === stack.bottom.rank) {
+                    if(stack.bottom !== null && playerCard.rank === stack.bottom.rank) {
                         followPossible = true;
                         break;
                     }
@@ -377,7 +377,7 @@ var uiStore = (function() {
     var fPlayerHand = function(state, action) {
         if(state === undefined) { return null; }
 
-        if(action.type === 'STATE DELTA' && action.delta === 'REMOVE FROM PLAYER HAND') {
+        if(action.type === 'STATE DELTA' && action.change === 'REMOVE FROM PLAYER HAND') {
             var newState = [];
 
             for(var i = 0; i < state.length; i++) {
@@ -397,7 +397,8 @@ var uiStore = (function() {
             return null;
         }
 
-        if(action.type === 'STATE DELTA' && action.delta === 'PUT ON TABLE') {
+        if(action.type === 'STATE DELTA' && action.change === 'PUT ON TABLE') {
+
             state.push({
                 'top': action.card,
                 'bottom': null
@@ -410,7 +411,7 @@ var uiStore = (function() {
     var fOpponents = function(state, action) {
         if(state === undefined) { return null; }
 
-        if(action.type === 'STATE DELTA' && action.delta === 'REMOVE FROM OPPONENT HAND') {
+        if(action.type === 'STATE DELTA' && action.change === 'REMOVE FROM OPPONENT HAND') {
             console.log(state, action);
 
             var newState = state.slice(0);
@@ -580,9 +581,6 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
         uiStore.dispatch(action);
     };
 
-    // TODO: send init moves
-    // TODO; apply init moves
-    // TODO: show init moves on the client
     // TODO: ui buttons for follow moves
     // TODO: all the same shit for follow moves
 

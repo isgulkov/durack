@@ -14,7 +14,7 @@ from tornado.options import define, options
 
 define("port", default=8888, help="run on the given port", type=int)
 
-from mechanics import Card, GameState, GameStateDelta
+from mechanics import GameState, IllegalMoveException
 
 
 class Application(tornado.web.Application):
@@ -72,9 +72,17 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     def initialize_game(self, player_connections):
         new_state = GameState.random_state([(p, "pidor") for p in player_connections])
 
+        def send_state_update(connection, update):
+            update['type'] = 'STATE DELTA'
+
+            connection.write_message(update)
+
+        new_state.add_message_handler(send_state_update)
+
         for p in player_connections:
             self.game_states[p] = new_state
 
+        # TODO: move into GameState ?
         for connection, name in new_state.players:
             connection.write_message(json.dumps({
                 'type': 'INITIALIZE GAME',
@@ -94,13 +102,15 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         if p in cls.matchmaking_pool:
             cls.matchmaking_pool.remove(p)
 
-            logging.info("%s is no longer looking for game (currently %d total)"
-                         % (p, len(cls.matchmaking_pool)))
+            logging.info("%s is no longer looking for game (currently %d total)" % (p, len(cls.matchmaking_pool)))
 
             cls.update_num_looking_for_game()
 
     def on_message(self, message):
         msg = json.loads(message)
+
+        logging.info("Got message:")
+        logging.info(msg)
 
         if msg['action'] == 'FIND GAME':
             self.find_game()
@@ -110,26 +120,17 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             self.write_message(json.dumps({
                 'type': 'STOPPED LOOKING FOR GAME'
             }))
-        elif msg['action'] == 'MOVE PUT':
-            self.process_put_move(Card(**msg['card']))
+        elif msg['action'][:4] == 'MOVE':
+            if self not in self.game_states:
+                logging.warning("Player %s issued a move but doesn't participate in known games")
+                return
 
-    def process_put_move(self, card):
-        if self not in self.game_states:
-            # TODO: show error message on the client
-            logging.warning("Player %s issued a move but doesn't participate in known games")
-            return
+            game = self.game_states[self]
 
-        game_state = self.game_states[self]
-
-        delta_messages = game_state.apply_put_move(self, card)
-
-        if delta_messages is None:
-            logging.warning("Player %s issued an invalid move")
-            return
-
-        for (connection, name), deltas in izip(game_state.players, delta_messages):
-            for d in deltas:
-                connection.write_message(d)
+            try:
+                game.process_move(self, msg)
+            except IllegalMoveException as e:
+                logging.warning("Player %s issued an illegal move: %s" % (self, e.message, ))
 
     @classmethod
     def send_deltas(cls, game, delta):
