@@ -1,3 +1,4 @@
+from itertools import izip
 import logging
 import os.path
 import json
@@ -13,7 +14,7 @@ from tornado.options import define, options
 
 define("port", default=8888, help="run on the given port", type=int)
 
-from mechanics import GameState
+from mechanics import Card, GameState, GameStateDelta
 
 
 class Application(tornado.web.Application):
@@ -44,7 +45,7 @@ class MainHandler(tornado.web.RequestHandler):
 class GameSocketHandler(tornado.websocket.WebSocketHandler):
     matchmaking_pool = set()
 
-    game_for_player = {}
+    game_states = {}
 
     MIN_NUM_PLAYERS = 2 # TODO: Apply some logic to it
 
@@ -60,7 +61,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         pass
 
     def check_origin(self, origin):
-        return True # TODO: remove
+        # TODO: serve client page through Tornado so this can be removed
+        return True
 
     def on_close(self):
         if self in self.matchmaking_pool:
@@ -71,7 +73,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         new_state = GameState.random_state([(p, "pidor") for p in player_connections])
 
         for p in player_connections:
-            self.game_for_player[p] = new_state
+            self.game_states[p] = new_state
 
         for connection, name in new_state.players:
             connection.write_message(json.dumps({
@@ -108,6 +110,31 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             self.write_message(json.dumps({
                 'type': 'STOPPED LOOKING FOR GAME'
             }))
+        elif msg['action'] == 'MOVE PUT':
+            self.process_put_move(Card(**msg['card']))
+
+    def process_put_move(self, card):
+        if self not in self.game_states:
+            # TODO: show error message on the client
+            logging.warning("Player %s issued a move but doesn't participate in known games")
+            return
+
+        game_state = self.game_states[self]
+
+        delta_messages = game_state.apply_put_move(self, card)
+
+        if delta_messages is None:
+            logging.warning("Player %s issued an invalid move")
+            return
+
+        for (connection, name), deltas in izip(game_state.players, delta_messages):
+            for d in deltas:
+                connection.write_message(d)
+
+    @classmethod
+    def send_deltas(cls, game, delta):
+        for p in (uid for uid, name in game.players):
+            pass
 
     def find_game(self):
         self.matchmaking_pool.add(self)

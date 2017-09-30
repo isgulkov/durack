@@ -160,7 +160,7 @@ cardSpritesImg.src = 'img/cards.gif';
         for(var i = 0; i < tableStacks.length; i++) {
             this.drawCard(tableStacks[i].top, totalLeftOffset + (stackSpacing) * i, topOffset);
 
-            if(tableStacks[i].bottom !== undefined) {
+            if(tableStacks[i].bottom !== null) {
                 this.drawCard(
                     tableStacks[i].bottom,
                     totalLeftOffset + 5 + (stackSpacing) * i,
@@ -283,7 +283,7 @@ cardSpritesImg.src = 'img/cards.gif';
     };
 
     CanvasRenderingContext2D.prototype.drawButtons = function(gameState) {
-        if(gameState.currentPhase === 'follow' && gameState.currentActor === 0) {
+        if(gameState.currentPhase === 'follow' && gameState.currentActor === 0 && gameState.tableStacks.length !== 0) {
             this.drawBigButton("Забрать", {
                 target: 'button',
                 data: 'take'
@@ -348,8 +348,8 @@ cardSpritesImg.src = 'img/cards.gif';
             var ctx = this;
 
             this.canvas.onclick = function(e) {
-                var x = e.clientX - this.offsetLeft;
-                var y = e.clientY - this.offsetTop;
+                var x = e.pageX - this.offsetLeft;
+                var y = e.pageY - this.offsetTop;
 
                 for(var i = ctx.clickAreas.length - 1; i >= 0; i--) {
                     var area = ctx.clickAreas[i];
@@ -370,32 +370,85 @@ cardSpritesImg.src = 'img/cards.gif';
 }());
 
 var uiStore = (function() {
+    var fNumPlayers = function(state, action) { if(state === undefined) { return null; } return state; };
+    var fCurrentPhase = function(state, action) { if(state === undefined) { return null; } return state; };
+    var fCurrentActor = function(state, action) { if(state === undefined) { return null; } return state; };
+
+    var fPlayerHand = function(state, action) {
+        if(state === undefined) { return null; }
+
+        if(action.type === 'STATE DELTA' && action.delta === 'REMOVE FROM PLAYER HAND') {
+            var newState = [];
+
+            for(var i = 0; i < state.length; i++) {
+                if(state[i].suit !== action.card.suit || state[i].rank !== action.card.rank) {
+                    newState.push(state[i]);
+                }
+            }
+
+            return newState;
+        }
+
+        return state;
+    };
+
+    var fTableStacks = function(state, action) {
+        if(state === undefined) {
+            return null;
+        }
+
+        if(action.type === 'STATE DELTA' && action.delta === 'PUT ON TABLE') {
+            state.push({
+                'top': action.card,
+                'bottom': null
+            })
+        }
+
+        return state;
+    };
+
+    var fOpponents = function(state, action) {
+        if(state === undefined) { return null; }
+
+        if(action.type === 'STATE DELTA' && action.delta === 'REMOVE FROM OPPONENT HAND') {
+            console.log(state, action);
+
+            var newState = state.slice(0);
+
+            newState[action.i_opponent].numCards -= 1;
+
+            return newState;
+        }
+
+        return state;
+    };
+
+    var fLeftoverStackSize = function(state, action) { if(state === undefined) { return null; } return state; };
+    var fBottomCard = function(state, action) { if(state === undefined) { return null; } return state; };
+    var fPlayedStackSize = function(state, action) { if(state === undefined) { return null; } return state; };
+
+    var fInitializedGame = Redux.combineReducers({
+        numPlayers: fNumPlayers,
+        currentPhase: fCurrentPhase,
+        currentActor: fCurrentActor,
+        playerHand: fPlayerHand,
+        tableStacks: fTableStacks,
+        opponents: fOpponents,
+        leftoverStackSize: fLeftoverStackSize,
+        bottomCard: fBottomCard,
+        playedStackSize: fPlayedStackSize
+    });
+
     var fGame = function(state, action) {
         if(state === undefined) {
-            return 'no game'
+            return 'no game'; // TODO: do something
         }
 
         if(action.type === 'INITIALIZE GAME') {
             return action.init_state;
         }
-
-        if(action.type === 'COME ON IT') {
-            var phase = state.currentPhase, actor = state.currentActor;
-
-            if(phase === 'init') {
-                phase = 'follow';
-
-                actor += 1;
-                actor %= state.numPlayers;
-            }
-            else {
-                phase = 'init'
-            }
-
-            return Object.assign({}, state, {
-                currentPhase: phase,
-                currentActor: actor
-            });
+        else if(state !== 'no game') {
+            return fInitializedGame(state, action);
         }
 
         return state;
@@ -491,7 +544,17 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
 
     ctx.clickHandlers = []; // TODO: move somewhere else
     ctx.clickHandlers.push(function(message) {
-        console.log(message);
+        if(message.target === 'card') {
+            if(uiStore.getState().game.currentPhase === 'init') {
+                // TODO: validate move locally ?
+
+                socket.send(JSON.stringify({
+                    action: 'MOVE PUT',
+                    card: message.data
+                }));
+            }
+        }
+        console.log(message); // TODO: remove
     });
 
     window.requestAnimationFrame(function() {
@@ -517,8 +580,11 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
         uiStore.dispatch(action);
     };
 
-    // TODO: process clicks
-    // TODO: issue moves
+    // TODO: send init moves
+    // TODO; apply init moves
+    // TODO: show init moves on the client
+    // TODO: ui buttons for follow moves
+    // TODO: all the same shit for follow moves
 
     // TODO: nickname choice
     // TODO: move timer

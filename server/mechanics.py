@@ -58,6 +58,16 @@ class Card:
         self.suit = suit
         self.rank = rank
 
+    @property
+    def rank_value(self):
+        return self.ranks.index(self.rank)
+
+    def __eq__(self, other):
+        return self.suit == other.suit and self.rank == other.rank
+
+    def __hash__(self):
+        return self.suits.index(self.suit) * 100 + self.ranks.index(self.rank)
+
     def __str__(self):
         return repr(self)
 
@@ -73,7 +83,7 @@ class Card:
 class GameState:
     def __init__(self, players, player_hands, table_stacks, leftover_deck, played_deck, bottom_card):
         self.phase = 'init'
-        self.spotlight = 0
+        self.spotlight = players[0][0]
 
         self.players = players
         self.player_hands = player_hands
@@ -85,6 +95,8 @@ class GameState:
 
         self.bottom_card = bottom_card
 
+    # Creation
+
     @classmethod
     def random_state(cls, players):
         deck = Card._get_shuffled_deck()
@@ -94,7 +106,7 @@ class GameState:
         player_hands = {}
 
         for uid, name in players:
-            hand = [deck.pop() for _ in xrange(6)]
+            hand = set(deck.pop() for _ in xrange(6))
 
             player_hands[uid] = hand
 
@@ -117,7 +129,7 @@ class GameState:
 
         for i, (uid, name) in enumerate(players):
             for card in player_hands[uid]:
-                card_value = (card.suit != trump_suit) * 100 + Card.ranks.index(card.rank)
+                card_value = (card.suit != trump_suit) * 100 + card.rank_value
 
                 if card_value < min_value:
                     min_value = card_value
@@ -125,15 +137,101 @@ class GameState:
 
         players[0], players[i_start] = players[i_start], players[0]
 
-    def as_dict_for_player(self, player_uid):
-        i_player = None
+    # Utility
 
+    def index_of_player(self, player_uid):
         for i, (uid, name) in enumerate(self.players):
             if uid == player_uid:
-                i_player = i
-                break
+                return i
         else:
             raise ValueError("No player with uid `%s` in the game" % player_uid)
+
+    def relative_index_of_other_player(self, this_player, other_player):
+        i_this_player = self.index_of_player(this_player)
+        i_other_player = self.index_of_player(other_player)
+
+        return (i_other_player - i_this_player) % len(self.players)
+
+    # Mutation
+
+    def _is_valid_put_move(self, player_uid, card):
+        if (self.phase == 'init' and self.spotlight != player_uid) \
+                or (self.phase == 'follow' and self.spotlight == player_uid):
+            return False
+
+        if not any(uid == player_uid for uid, _ in self.players):
+            return False
+
+        if card not in self.player_hands[player_uid]:
+            return False
+
+        if len(self.table_stacks) == 0:
+            return True
+
+        if self.phase == 'follow' and len(self.table_stacks) == len(self.player_hands[self.spotlight]):
+            return False
+
+        if any(c[1] is not None and c[1].rank == card.rank for stack in self.table_stacks for c in stack.iteritems()):
+            return True
+
+        return False
+
+    def apply_put_move(self, player_uid, card):
+        """
+        Apply to the current state an init move (to put the specified card on the table) by the specified player
+        :return: List of state deltas to be sent to each player
+        """
+        if not self._is_valid_put_move(player_uid, card):
+            return None
+
+        self.player_hands[player_uid].remove(card)
+        self.table_stacks.append({
+            'top': card,
+            'bottom': None
+        })
+
+        deltas = [[{'type': 'STATE DELTA', 'delta': 'PUT ON TABLE', 'card': card.as_dict()}] for p in self.players]
+
+        for i, (uid, name) in enumerate(self.players):
+            if player_uid == uid:
+                deltas[i].append({
+                    'type': 'STATE DELTA',
+                    'delta': 'REMOVE FROM PLAYER HAND',
+                    'card': card.as_dict()
+                })
+            else:
+                deltas[i].append({
+                    'type': 'STATE DELTA',
+                    'delta': 'REMOVE FROM OPPONENT HAND',
+                    'i_opponent': self.relative_index_of_other_player(uid, player_uid) - 1
+                })
+
+        return deltas
+
+    def is_valid_defend_move(self, player_uid, card, i_stack):
+        if self.phase != 'follow' or self.spotlight != player_uid:
+            return False
+
+        if card not in self.player_hands[player_uid]:
+            return False
+
+        top, bottom = self.table_stacks[i_stack]
+
+        if bottom is not None:
+            return False
+
+        if card.suit == top.suit and card.rank_value > top.rank_value:
+            return True
+
+        if card.suit == self.bottom_card.suit and top.suit != self.bottom_card.suit:
+            return True
+
+        return False
+
+    # Representation
+
+    def as_dict_for_player(self, player_uid):
+        i_player = self.index_of_player(player_uid)
 
         shifted_opponents = self.players[i_player + 1:] + self.players[:i_player]
 
@@ -141,7 +239,7 @@ class GameState:
             'numPlayers': len(self.players),
 
             'currentPhase': self.phase,
-            'currentActor': (self.spotlight - i_player) % len(self.players),
+            'currentActor': (self.index_of_player(self.spotlight) - i_player) % len(self.players),
             # TODO: ^^^^^         ^^^^^^^^^
             # TODO: make terminology the same?
 
