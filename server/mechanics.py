@@ -192,7 +192,9 @@ class GameState:
         if len(self.table_stacks) == 0:
             return True
 
-        if len(self.table_stacks) == len(self.player_hands[self.spotlight]):
+        num_empty_stacks = len([stack for stack in self.table_stacks if stack['bottom'] is None])
+
+        if num_empty_stacks == len(self.player_hands[self.spotlight]):
             return False
 
         if any(c[1] is not None and c[1].rank == card.rank for stack in self.table_stacks for c in stack.iteritems()):
