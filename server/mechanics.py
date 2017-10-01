@@ -206,7 +206,12 @@ class GameState:
 
         num_empty_stacks = len([stack for stack in self.table_stacks if stack['bottom'] is None])
 
-        if num_empty_stacks == len(self.player_hands[self.spotlight]):
+        if self.phase == 'follow' and num_empty_stacks == len(self.player_hands[self.spotlight]):
+            return False
+
+        next_player = self.players[(self._index_of_player(self.spotlight) + 1) % len(self.players)][0]
+
+        if self.phase == 'init' and num_empty_stacks == len(self.player_hands[next_player]):
             return False
 
         if any(c[1] is not None and c[1].rank == card.rank for stack in self.table_stacks for c in stack.iteritems()):
