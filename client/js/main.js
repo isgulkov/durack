@@ -325,8 +325,7 @@ cardSpritesImg.src = 'img/cards.gif';
     CanvasRenderingContext2D.prototype.drawButtons = function(gameState) {
         if(gameState.currentPhase === 'follow' && gameState.currentActor === 0 && gameState.tableStacks.length !== 0) {
             this.drawBigButton("Забрать", {
-                target: 'button',
-                data: 'take'
+                target: 'button take'
             });
         }
         else if(gameState.currentPhase === 'init' && gameState.currentActor === 0) {
@@ -439,15 +438,24 @@ var uiStore = (function() {
         if(state === undefined) { return null; }
 
         if(action.type === 'STATE DELTA' && action.change === 'REMOVE FROM PLAYER HAND') {
-            var newState = [];
+            var strippedDownState = [];
 
             for(var i = 0; i < state.length; i++) {
                 if(state[i].suit !== action.card.suit || state[i].rank !== action.card.rank) {
-                    newState.push(state[i]);
+                    strippedDownState.push(state[i]);
                 }
             }
 
-            return newState;
+            return strippedDownState;
+        }
+        else if(action.type === 'STATE DELTA' && action.change === 'ADD TO PLAYER HAND') {
+            var amendedState = state.slice(0);
+
+            action.cards.forEach(function(card) {
+                amendedState.push(card);
+            });
+
+            return amendedState;
         }
 
         return state;
@@ -474,7 +482,9 @@ var uiStore = (function() {
             mutatedState[action.i_stack].bottom = action.card;
 
             return mutatedState;
-
+        }
+        else if(action.type === 'STATE DELTA' && action.change === 'CLEAR TABLE') {
+            return []
         }
 
         return state;
@@ -486,11 +496,21 @@ var uiStore = (function() {
         if(action.type === 'STATE DELTA' && action.change === 'REMOVE FROM OPPONENT HAND') {
             console.log(state, action);
 
-            var newState = state.slice(0);
+            var decreasedState = state.slice(0);
 
-            newState[action.i_opponent].numCards -= 1;
+            decreasedState[action.i_opponent].numCards -= 1;
 
-            return newState;
+            return decreasedState;
+        }
+
+        if(action.type === 'STATE DELTA' && action.change === 'ADD TO OPPONENT HAND') {
+            console.log(state, action);
+
+            var increasedState = state.slice(0);
+
+            increasedState[action.i_opponent].numCards += action.numCards;
+
+            return increasedState;
         }
 
         return state;
@@ -674,8 +694,13 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
                 }))
             }
         }
+        else if(message.target === 'button take') {
+            socket.send(JSON.stringify({
+                action: 'MOVE TAKE'
+            }));
+        }
 
-        // TODO: process other button
+        // TODO: add button for ending move during put phase
 
         console.log(message); // TODO: remove
     });

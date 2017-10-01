@@ -77,7 +77,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
             connection.write_message(update)
 
-        new_state.add_message_handler(send_state_update)
+        new_state.add_update_handler(send_state_update)
 
         for p in player_connections:
             self.game_states[p] = new_state

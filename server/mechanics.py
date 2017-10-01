@@ -100,7 +100,7 @@ class GameState:
 
         self.bottom_card = bottom_card
 
-        self.message_handlers = set()
+        self._update_handlers = set()
 
     # Creation
 
@@ -120,12 +120,12 @@ class GameState:
         ordered_players = list(players)
         urandom_shuffle_inplace(ordered_players)
 
-        cls.choose_first_player(bottom_card.suit, ordered_players, player_hands)
+        cls._choose_first_player(bottom_card.suit, ordered_players, player_hands)
 
         return GameState(ordered_players, player_hands, [], deck, [], bottom_card)
 
     @staticmethod
-    def choose_first_player(trump_suit, players, player_hands):
+    def _choose_first_player(trump_suit, players, player_hands):
         # Put the player that should move first at the beginning of the array in accorance to the rules of the game:
         # * choose the player who has the trump card of the lowest rank,
         # * if no one has trump cards, choose a player with who has a card with the lowest rank
@@ -146,7 +146,7 @@ class GameState:
 
     # Utility
 
-    def index_of_player(self, player_uid):
+    def _index_of_player(self, player_uid):
         # TODO; do something about all these indices (put in hash table ?)
         for i, (uid, name) in enumerate(self.players):
             if uid == player_uid:
@@ -154,9 +154,9 @@ class GameState:
         else:
             raise ValueError("No player with uid `%s` in the game" % player_uid)
 
-    def relative_index_of_other_player(self, this_player, other_player):
-        i_this_player = self.index_of_player(this_player)
-        i_other_player = self.index_of_player(other_player)
+    def _relative_index_of_other_player(self, this_player, other_player):
+        i_this_player = self._index_of_player(this_player)
+        i_other_player = self._index_of_player(other_player)
 
         return (i_other_player - i_this_player) % len(self.players)
 
@@ -171,7 +171,10 @@ class GameState:
                 self._end_init_phase()
         elif move['action'] == 'MOVE DEFEND':
             if not self._apply_defend_move(player_uid, Card(**move['card']), move['i_stack']):
-                raise IllegalMoveException("Illagal defend move") # TODO: add details
+                raise IllegalMoveException("Illegal defend move") # TODO: add details
+        elif move['action'] == 'MOVE TAKE':
+            if not self._apply_take_move(player_uid):
+                raise IllegalMoveException("Illegal take move") # TODO: add details
         else:
             raise ValueError("Unknown type of move `%s`" % move['action'])
 
@@ -212,7 +215,7 @@ class GameState:
         })
 
         for uid, name in self.players:
-            self.send_message(uid, {
+            self._send_update(uid, {
                 'change': 'PUT ON TABLE',
                 'card': card.as_dict()
             })
@@ -242,20 +245,20 @@ class GameState:
         self.phase = 'follow'
 
         for uid, name in self.players:
-            self.send_message(uid, {
+            self._send_update(uid, {
                 'change': 'PHASE',
                 'phase': 'follow'
             })
 
     def _advance_spotlight(self):
-        i_new_spotlight = (self.index_of_player(self.spotlight) + 1) % len(self.players)
+        i_new_spotlight = (self._index_of_player(self.spotlight) + 1) % len(self.players)
 
         self.spotlight = self.players[i_new_spotlight][0]
 
         for uid, name in self.players:
-            self.send_message(uid, {
+            self._send_update(uid, {
                 'change': 'SPOTLIGHT',
-                'i_spotlight': self.relative_index_of_other_player(uid, self.spotlight)
+                'i_spotlight': self._relative_index_of_other_player(uid, self.spotlight)
             })
 
     def _is_valid_defend_move(self, player_uid, card, i_stack):
@@ -291,7 +294,7 @@ class GameState:
         self._send_remove_from_hand(player_uid, card)
 
         for uid, name in self.players:
-            self.send_message(uid, {
+            self._send_update(uid, {
                 'change': 'PUT ONTO STACK',
                 'i_stack': i_stack,
                 'card': card.as_dict()
@@ -299,34 +302,114 @@ class GameState:
 
         return True
 
+    def _is_valid_take_move(self, player_uid):
+        if self.phase != 'follow' or self.spotlight != player_uid:
+            return False
+
+        if len(self.table_stacks) == 0:
+            return False
+
+        return True
+
+    def _apply_take_move(self, player_uid):
+        if not self._is_valid_take_move(player_uid):
+            return False
+
+        table_cards = []
+
+        for stack in self.table_stacks:
+            table_cards.append(stack['top'])
+
+            if stack['bottom'] is not None:
+                table_cards.append(stack['bottom'])
+
+        self.player_hands[player_uid].update(table_cards)
+
+        self._send_add_to_player_hand(player_uid, table_cards)
+        self._send_remove_from_deck(len(table_cards))
+
+        self.table_stacks = []
+
+        self._send_clear_table()
+
+        self._advance_spotlight()
+        self._end_follow_phase()
+
+    def _end_follow_phase(self):
+        if self.phase != 'follow':
+            raise IllegalMoveException("Not in follow phase")
+
+        self.phase = 'init'
+
+        for uid, name in self.players:
+            self._send_update(uid, {
+                'change': 'PHASE',
+                'phase': 'init'
+            })
+
     # Reaction TODO: think of a better name, LOL
 
-    def add_message_handler(self, handler): # TODO: rename them to update handlers
-        self.message_handlers.add(handler)
+    def add_update_handler(self, handler): # TODO: rename them to update handlers
+        self._update_handlers.add(handler)
 
-        return lambda: self.message_handlers.remove(handler)
+        return lambda: self._update_handlers.remove(handler)
 
-    def send_message(self, player_uid, message):
-        for handler in self.message_handlers:
+    def _send_update(self, player_uid, message):
+        for handler in self._update_handlers:
             handler(player_uid, message)
 
     def _send_remove_from_hand(self, player_uid, card):
         for i, (uid, name) in enumerate(self.players):
             if player_uid == uid:
-                self.send_message(uid, {
+                self._send_update(uid, {
                     'change': 'REMOVE FROM PLAYER HAND',
                     'card': card.as_dict()
                 })
             else:
-                self.send_message(uid, {
+                self._send_update(uid, {
                     'change': 'REMOVE FROM OPPONENT HAND',
-                    'i_opponent': self.relative_index_of_other_player(uid, player_uid) - 1
+                    'i_opponent': self._relative_index_of_other_player(uid, player_uid) - 1
                 })
+
+    def _send_add_to_player_hand(self, player_uid, cards):
+        for i, (uid, name) in enumerate(self.players):
+            if player_uid == uid:
+                self._send_update(uid, {
+                    'change': 'ADD TO PLAYER HAND',
+                    'cards': [c.as_dict() for c in cards]
+                })
+            else:
+                self._send_update(uid, {
+                    'change': 'ADD TO OPPONENT HAND',
+                    #vvv TODO: unify case in these messages (camel case as in JS or underscore as in Python)
+                    'i_opponent': self._relative_index_of_other_player(uid, player_uid) - 1,
+                    'numCards': len(cards)
+                })
+
+    def _send_clear_table(self):
+        for uid, name in self.players:
+            self._send_update(uid, {
+                'change': 'CLEAR TABLE'
+            })
+
+    def _send_remove_from_deck(self, num_cards):
+        for uid, name in self.players:
+            self._send_update(uid, {
+                'change': 'REMOVE FROM DECK',
+                'numCards': num_cards
+            })
+
+    def _send_add_to_played_deck(self, num_cards):
+        for uid, name in self.players:
+            self._send_update(uid, {
+                'change': 'ADD TO PLAYED DECK',
+                'numCards': num_cards
+            })
 
     # Representation
 
     def as_dict_for_player(self, player_uid):
-        i_player = self.index_of_player(player_uid)
+        i_player = self._index_of_player(player_uid)
 
         shifted_opponents = self.players[i_player + 1:] + self.players[:i_player]
 
@@ -334,7 +417,7 @@ class GameState:
             'numPlayers': len(self.players),
 
             'currentPhase': self.phase,
-            'currentActor': (self.index_of_player(self.spotlight) - i_player) % len(self.players),
+            'currentActor': (self._index_of_player(self.spotlight) - i_player) % len(self.players),
             # TODO: ^^^^^         ^^^^^^^^^
             # TODO: make terminology the same?
 
