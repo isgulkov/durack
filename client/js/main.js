@@ -209,21 +209,41 @@ cardSpritesImg.src = 'img/cards.gif';
         var opponentHandCenters = getOpponentHandCenters(opponentHands.length + 1);
 
         for(var i = 0; i < opponentHands.length; i++) {
+            this.save();
+
             var center = opponentHandCenters[i];
 
             var handSize = opponentHands[i].numCards;
 
-            var cardSpacing = Math.min(10, 100 / handSize);
+            if(handSize !== 0) {
+                var cardSpacing = Math.min(10, 100 / handSize);
 
-            var handWidth = cardSpacing * (handSize - 1) + CARD_WIDTH;
+                var handWidth = cardSpacing * (handSize - 1) + CARD_WIDTH;
 
-            for(var j = handSize - 1; j >= 0; j--) {
-                this.drawCard('back', center.x - handWidth / 2 + cardSpacing * j, center.y - CARD_HEIGHT / 2);
+                for(var j = handSize - 1; j >= 0; j--) {
+                    this.drawCard('back', center.x - handWidth / 2 + cardSpacing * j, center.y - CARD_HEIGHT / 2);
+                }
+            }
+            else {
+                // TODO: find a better way to display this?
+
+                this.save();
+
+                this.beginPath();
+                this.arc(center.x, center.y, 50, 0, 2 * Math.PI);
+                this.closePath();
+
+                this.globalAlpha = 0.4;
+
+                this.fillStyle = 'gray';
+                this.fill();
+
+                this.restore();
             }
 
-            var nickname = opponentHands[i].nickname;
+            // Draw nickname
 
-            this.save();
+            var nickname = opponentHands[i].nickname;
 
             this.font = '16px Helvetica, sans-serif';
             this.textAlign = 'center';
@@ -776,15 +796,17 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
     };
 
     // TODO: players finishing the game
+    // TODO: draw empty opponent hands
 
-    // TODO: nickname choice
     // TODO: move timer
+    // TODO: nickname choice
 
     // TODO: reconnect in menu
     // TODO: persist game state across sessions
 
     // TODO: terminology in state keys: stack -> deck
     // TODO: restructure with ES6 imports using Babel
+    // TODO: deployment and serve static
 };
 
 document.addEventListener('DOMContentLoaded', function() {
