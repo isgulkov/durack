@@ -359,24 +359,26 @@ class GameState:
 
         additional_cards = [[] for _ in players]
 
-        go = True
+        for i, (uid, name) in enumerate(players):
+            while len(self.player_hands[uid]) + len(additional_cards[i]) < 6 and len(self.leftover_deck) != 0:
+                logging.info("In leftover deck: %d" % len(self.leftover_deck))
+                card = self.leftover_deck.pop()
+                logging.info("Popped %s from leftover deck, %d left" % (card, len(self.leftover_deck)))
 
-        while go:
-            go = False
-            for i, (uid, name) in enumerate(players):
-                if len(self.player_hands[uid]) + len(additional_cards[i]) < 6 and len(self.leftover_deck) != 0:
-                    card = self.leftover_deck.pop()
+                additional_cards[i].append(card)
 
-                    additional_cards[i].append(card)
-                    go = True
+                logging.info(additional_cards)
 
         for i, (uid, name) in enumerate(players):
-            # TODO: do these two things in one method?
+            # TODO: put these two things in one method?
 
             self.player_hands[uid].update(additional_cards[i])
             self._send_add_to_player_hand(uid, additional_cards[i])
 
-        self._send_remove_from_deck(len(additional_cards))
+        logging.info(len(self.leftover_deck))
+        logging.info(self.leftover_deck)
+
+        self._send_remove_from_deck(sum(len(cs) for cs in additional_cards))
 
     def _get_table_cards(self):
         for stack in self.table_stacks:
@@ -403,7 +405,6 @@ class GameState:
         self.player_hands[player_uid].update(table_cards)
 
         self._send_add_to_player_hand(player_uid, table_cards)
-        self._send_remove_from_deck(len(table_cards))
 
         self.table_stacks = []
 
