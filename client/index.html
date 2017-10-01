@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Дурак</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/3.7.2/redux.js"
+            integrity="sha256-Ezb5Nri+VAO8xJDHLcPCxS70Kfh+MUFw9OXLZZrdfCs="
+            crossorigin="anonymous"></script> <!-- TODO: replace with min -->
+    <script src="js/main.js"></script>
+    <style type="text/css">
+        div#canvas_container {
+            text-align: center;
+        }
+
+        canvas#main_canvas {
+            margin: 40px auto;
+        }
+
+        div#menu_container {
+            position: fixed;
+            top: 200px;
+            width: 100%;
+
+            text-align: center;
+        }
+
+        div#menu {
+            margin: 0 auto;
+
+            max-width: 300px;
+
+            padding: 25px;
+
+            background: white;
+        }
+    </style>
+    <link rel="icon" href="favicon.png">
+</head>
+<body>
+    <div id="canvas_container">
+        <canvas id="main_canvas" width="1000" height="600"></canvas>
+    </div>
+
+    <div id="menu_container">
+        <div id="menu">
+            <p id="item_find_game">
+                <a href="#" id="find_game">Найти игру</a>
+            </p>
+            <div id="message_looking_for_game">
+                <p id="">
+                    Идет поиск игры (<span id="num_looking_for_game"></span>)...
+                </p>
+                <p>
+                    <a href="#" id="cancel_find_game">Отмена</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
