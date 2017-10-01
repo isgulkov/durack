@@ -125,7 +125,7 @@ cardSpritesImg.src = 'img/cards.gif';
         }
     };
 
-    CanvasRenderingContext2D.prototype.drawPlayersHand = function(playerCards) {
+    CanvasRenderingContext2D.prototype.drawPlayersHand = function(playerCards, defendMoveCard) {
         var cardSpacing = Math.min(600 / playerCards.length, CARD_WIDTH + 10);
 
         var handWidth = cardSpacing * (playerCards.length - 1) + CARD_WIDTH;
@@ -136,7 +136,9 @@ cardSpritesImg.src = 'img/cards.gif';
             var xOffset = totalLeftOffset + cardSpacing * i;
             var yOffset = this.canvas.height - CARD_HEIGHT - 50;
 
-            this.drawCard(playerCards[i], xOffset, yOffset);
+            var card = playerCards[i];
+
+            this.drawCard(card, xOffset, yOffset);
 
             this.clickAreas.push({
                 x: xOffset,
@@ -144,14 +146,28 @@ cardSpritesImg.src = 'img/cards.gif';
                 w: CARD_WIDTH,
                 h: CARD_HEIGHT,
                 message: {
-                    target: 'card',
+                    target: 'card in hand',
                     data: playerCards[i]
                 }
             });
+
+            if(defendMoveCard && defendMoveCard.suit === card.suit && defendMoveCard.rank === card.rank) {
+                this.drawButton(
+                    "Отмена",
+                    {
+                        target: 'cancel defend move'
+                    },
+                    xOffset - 4,
+                    yOffset - 4,
+                    CARD_WIDTH + 8,
+                    CARD_HEIGHT + 8,
+                    'blue'
+                );
+            }
         }
     };
 
-    CanvasRenderingContext2D.prototype.drawCardsOnTable = function(tableStacks) {
+    CanvasRenderingContext2D.prototype.drawCardsOnTable = function(tableStacks, defendMoveCard) {
         var stackSpacing = Math.min(CARD_WIDTH + 20, (550 - CARD_WIDTH) / tableStacks.length);
 
         var totalLeftOffset = (this.canvas.width - stackSpacing * (tableStacks.length)) / 2;
@@ -160,12 +176,28 @@ cardSpritesImg.src = 'img/cards.gif';
         for(var i = 0; i < tableStacks.length; i++) {
             this.drawCard(tableStacks[i].top, totalLeftOffset + (stackSpacing) * i, topOffset);
 
+            var bottomCardX = totalLeftOffset + 5 + (stackSpacing) * i;
+            var bottomCardY = topOffset + CARD_HEIGHT / 2;
+
             if(tableStacks[i].bottom !== null) {
                 this.drawCard(
                     tableStacks[i].bottom,
-                    totalLeftOffset + 5 + (stackSpacing) * i,
-                    topOffset + CARD_HEIGHT / 2
+                    bottomCardX,
+                    bottomCardY
                 );
+            }
+            else if(defendMoveCard) {
+                this.drawButton(
+                    "Положить сюда",
+                    {
+                        target: 'table stack',
+                        data: i
+                    },
+                    bottomCardX,
+                    bottomCardY,
+                    CARD_WIDTH,
+                    CARD_HEIGHT
+                )
             }
         }
     };
@@ -244,18 +276,12 @@ cardSpritesImg.src = 'img/cards.gif';
         }
     };
 
-    CanvasRenderingContext2D.prototype.drawBigButton = function(text, message) {
+    CanvasRenderingContext2D.prototype.drawButton = function(text, message, x, y, width, height, color) {
         this.save();
-
-        var x = (this.canvas.width - 200) / 2;
-        var y = this.canvas.height - 200;
-
-        var width = 200;
-        var height = 40;
 
         this.globalAlpha = 0.4;
 
-        this.fillStyle = 'white';
+        this.fillStyle = color || 'white';
         this.fillRect(x, y, width, height);
 
         this.globalAlpha = 1.0;
@@ -280,6 +306,16 @@ cardSpritesImg.src = 'img/cards.gif';
         });
 
         this.restore();
+    };
+
+    CanvasRenderingContext2D.prototype.drawBigButton = function(text, message) {
+        var x = (this.canvas.width - 200) / 2;
+        var y = this.canvas.height - 200;
+
+        var width = 200;
+        var height = 40;
+
+        this.drawButton(text, message, x, y, width, height);
     };
 
     CanvasRenderingContext2D.prototype.drawButtons = function(gameState) {
@@ -330,9 +366,9 @@ cardSpritesImg.src = 'img/cards.gif';
         if(gameState !== 'no game') {
             this.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
 
-            this.drawPlayersHand(gameState.playerHand);
+            this.drawPlayersHand(gameState.playerHand, gameState.defendMoveCard);
 
-            this.drawCardsOnTable(gameState.tableStacks);
+            this.drawCardsOnTable(gameState.tableStacks, gameState.defendMoveCard);
 
             this.drawOpponentHands(gameState.opponents);
 
@@ -449,6 +485,23 @@ var uiStore = (function() {
     var fBottomCard = function(state, action) { if(state === undefined) { return null; } return state; };
     var fPlayedStackSize = function(state, action) { if(state === undefined) { return null; } return state; };
 
+    var fDefendMoveCard = function(state, action) {
+        if(state === undefined) {
+            return null;
+        }
+
+        if(action.type === 'DEFEND CLICK') {
+            return action.card;
+        }
+        else if(action.type === 'CANCEL DEFEND') {
+            return null;
+        }
+
+        // TODO: remove on many different occasions
+
+        return state;
+    };
+
     var fInitializedGame = Redux.combineReducers({
         numPlayers: fNumPlayers,
         currentPhase: fCurrentPhase,
@@ -458,12 +511,13 @@ var uiStore = (function() {
         opponents: fOpponents,
         leftoverStackSize: fLeftoverStackSize,
         bottomCard: fBottomCard,
-        playedStackSize: fPlayedStackSize
+        playedStackSize: fPlayedStackSize,
+        defendMoveCard: fDefendMoveCard // TODO: move this (and all buttons?) out of game state ?
     });
 
     var fGame = function(state, action) {
         if(state === undefined) {
-            return 'no game'; // TODO: do something
+            return 'no game'; // TODO: move this into the game state (?) to have a proper reducer
         }
 
         if(action.type === 'INITIALIZE GAME') {
@@ -566,9 +620,19 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
 
     ctx.clickHandlers = []; // TODO: move somewhere else
     ctx.clickHandlers.push(function(message) {
-        if(message.target === 'card') {
-            if(uiStore.getState().game.currentPhase === 'init') {
-                // TODO: validate move locally ?
+        var gameState = uiStore.getState().game;
+
+        if(message.target === 'card in hand') {
+            if(gameState.currentPhase === 'follow' && gameState.currentActor === 0) {
+                console.log("dispatching defend click even though ", message);
+
+                uiStore.dispatch({
+                    type: 'DEFEND CLICK',
+                    card: message.data
+                });
+            }
+            else {
+                // TODO: locally validate move more
 
                 socket.send(JSON.stringify({
                     action: 'MOVE PUT',
@@ -581,6 +645,14 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
                 action: 'MOVE END INIT'
             }));
         }
+
+        if(message.target === 'cancel defend move') {
+            uiStore.dispatch({
+                type: 'CANCEL DEFEND'
+            })
+        }
+
+        // TODO: process other button
 
         console.log(message); // TODO: remove
     });
