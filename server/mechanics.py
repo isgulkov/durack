@@ -192,7 +192,7 @@ class GameState:
         if len(self.table_stacks) == 0:
             return True
 
-        if self.phase == 'follow' and len(self.table_stacks) == len(self.player_hands[self.spotlight]):
+        if len(self.table_stacks) == len(self.player_hands[self.spotlight]):
             return False
 
         if any(c[1] is not None and c[1].rank == card.rank for stack in self.table_stacks for c in stack.iteritems()):
@@ -291,6 +291,7 @@ class GameState:
 
         self.table_stacks[i_stack]['bottom'] = card
 
+        self.player_hands[player_uid].remove(card)
         self._send_remove_from_hand(player_uid, card)
 
         for uid, name in self.players:
@@ -300,7 +301,58 @@ class GameState:
                 'card': card.as_dict()
             })
 
+        if self._follow_phase_ended():
+            self._end_follow_phase()
+
         return True
+
+    def _follow_phase_ended(self):
+        if any(stack['bottom'] is None for stack in self.table_stacks):
+            return False
+
+        for uid, name in self.players:
+            if uid == self.spotlight:
+                continue
+
+            for card in self.player_hands[uid]:
+                for table_card in self._get_table_cards():
+                    if card.rank == table_card.rank:
+                        return False
+
+        return True
+
+    def _hand_out_cards(self):
+        i_spotlight = self._index_of_player(self.spotlight)
+
+        players = self.players[i_spotlight:] + self.players[:i_spotlight]
+
+        additional_cards = [[] for _ in players]
+
+        go = True
+
+        while go:
+            go = False
+            for i, (uid, name) in enumerate(players):
+                if len(self.player_hands[uid]) + len(additional_cards[i]) < 6 and len(self.leftover_deck) != 0:
+                    card = self.leftover_deck.pop()
+
+                    additional_cards[i].append(card)
+                    go = True
+
+        for i, (uid, name) in enumerate(players):
+            # TODO: do these two things in one method?
+
+            self.player_hands[uid].update(additional_cards[i])
+            self._send_add_to_player_hand(uid, additional_cards[i])
+
+        self._send_remove_from_deck(len(additional_cards))
+
+    def _get_table_cards(self):
+        for stack in self.table_stacks:
+            yield stack['top']
+
+            if stack['bottom'] is not None:
+                yield stack['bottom']
 
     def _is_valid_take_move(self, player_uid):
         if self.phase != 'follow' or self.spotlight != player_uid:
@@ -315,13 +367,7 @@ class GameState:
         if not self._is_valid_take_move(player_uid):
             return False
 
-        table_cards = []
-
-        for stack in self.table_stacks:
-            table_cards.append(stack['top'])
-
-            if stack['bottom'] is not None:
-                table_cards.append(stack['bottom'])
+        table_cards = list(self._get_table_cards())
 
         self.player_hands[player_uid].update(table_cards)
 
@@ -336,9 +382,6 @@ class GameState:
         self._end_follow_phase()
 
     def _end_follow_phase(self):
-        if self.phase != 'follow':
-            raise IllegalMoveException("Not in follow phase")
-
         self.phase = 'init'
 
         for uid, name in self.players:
@@ -346,6 +389,12 @@ class GameState:
                 'change': 'PHASE',
                 'phase': 'init'
             })
+
+        self._send_add_to_played_deck(len(list(self._get_table_cards())))
+        self.table_stacks = []
+        self._send_clear_table()
+
+        self._hand_out_cards()
 
     # Reaction TODO: think of a better name, LOL
 

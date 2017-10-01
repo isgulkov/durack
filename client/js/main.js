@@ -516,9 +516,31 @@ var uiStore = (function() {
         return state;
     };
 
-    var fLeftoverStackSize = function(state, action) { if(state === undefined) { return null; } return state; };
+    var fLeftoverStackSize = function(state, action) {
+        if(state === undefined) {
+            return null;
+        }
+
+        if(action.type === 'STATE DELTA' && action.change === 'REMOVE FROM DECK') {
+            return state - action.numCards;
+        }
+
+        return state;
+    };
+
     var fBottomCard = function(state, action) { if(state === undefined) { return null; } return state; };
-    var fPlayedStackSize = function(state, action) { if(state === undefined) { return null; } return state; };
+
+    var fPlayedStackSize = function(state, action) {
+        if(state === undefined) {
+            return null;
+        }
+
+        if(action.type === 'STATE DELTA' && action.change === 'ADD TO PLAYED DECK') {
+            return state + action.numCards;
+        }
+
+        return state;
+    };
 
     var fDefendMoveCard = function(state, action) {
         if(state === undefined) {
@@ -531,8 +553,9 @@ var uiStore = (function() {
         else if(action.type === 'CANCEL DEFEND') {
             return null;
         }
-
-        // TODO: remove on many different occasions
+        else if(action.type === 'STATE DELTA' && action.change === 'PHASE') {
+            return null;
+        }
 
         return state;
     };
@@ -730,13 +753,14 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
         uiStore.dispatch(action);
     };
 
-    // TODO: phase transitions during follow
     // TODO: players finishing the game
+    // TODO: option for non-spotlight to end move during follow phase
 
     // TODO: nickname choice
     // TODO: move timer
 
-    // TODO: reconnect
+    // TODO: reconnect in menu
+    // TODO: persist game state across sessions
 
     // TODO: terminology in state keys: stack -> deck
     // TODO: restructure with ES6 imports using Babel
