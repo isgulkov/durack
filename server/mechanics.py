@@ -1,4 +1,5 @@
 from random import SystemRandom
+import logging
 
 
 def urandom_shuffle_inplace(xs):
@@ -146,6 +147,7 @@ class GameState:
     # Utility
 
     def index_of_player(self, player_uid):
+        # TODO; do something about all these indices (put in hash table ?)
         for i, (uid, name) in enumerate(self.players):
             if uid == player_uid:
                 return i
@@ -164,6 +166,9 @@ class GameState:
         if move['action'] == 'MOVE PUT':
             if not self.apply_put_move(player_uid, Card(**move['card'])):
                 raise IllegalMoveException("Illegal move tralala") # TODO: add details
+        elif move['action'] == 'MOVE END INIT':
+            if self.phase == 'init' and self.spotlight == player_uid and len(self.table_stacks) != 0:
+                self._end_init_phase()
         elif move['action'] == 'MOVE DEFEND':
             pass
         else:
@@ -207,7 +212,6 @@ class GameState:
 
         for uid, name in self.players:
             self.send_message(uid, {
-                'type': 'STATE DELTA', # TODO: get rid of this field ?
                 'change': 'PUT ON TABLE',
                 'card': card.as_dict()
             })
@@ -215,18 +219,53 @@ class GameState:
         for i, (uid, name) in enumerate(self.players):
             if player_uid == uid:
                 self.send_message(uid, {
-                    'type': 'STATE DELTA',
                     'change': 'REMOVE FROM PLAYER HAND',
                     'card': card.as_dict()
                 })
             else:
                 self.send_message(uid, {
-                    'type': 'STATE DELTA',
                     'change': 'REMOVE FROM OPPONENT HAND',
                     'i_opponent': self.relative_index_of_other_player(uid, player_uid) - 1
                 })
 
+        if not self._put_possible(player_uid):
+            self._end_init_phase()
+
         return True
+
+    def _put_possible(self, player_uid):
+        # TODO: refactor this check
+
+        for card in self.player_hands[player_uid]:
+            if self._is_valid_put_move(player_uid, card):
+                return True
+
+        return False
+
+    def _end_init_phase(self):
+        if self.phase != 'init':
+            raise IllegalMoveException("Not in init phase")
+
+        self._advance_spotlight()
+
+        self.phase = 'follow'
+
+        for uid, name in self.players:
+            self.send_message(uid, {
+                'change': 'PHASE',
+                'phase': 'follow'
+            })
+
+    def _advance_spotlight(self):
+        i_new_spotlight = (self.index_of_player(self.spotlight) + 1) % len(self.players)
+
+        self.spotlight = self.players[i_new_spotlight][0]
+
+        for uid, name in self.players:
+            self.send_message(uid, {
+                'change': 'SPOTLIGHT',
+                'i_spotlight': self.relative_index_of_other_player(uid, self.spotlight)
+            })
 
     def is_valid_defend_move(self, player_uid, card, i_stack):
         if self.phase != 'follow' or self.spotlight != player_uid:

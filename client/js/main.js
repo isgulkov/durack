@@ -318,8 +318,7 @@ cardSpritesImg.src = 'img/cards.gif';
 
             if(followPossible) {
                 this.drawBigButton("Закончить ход", {
-                    target: 'button',
-                    data: 'end_move'
+                    target: 'button end init'
                 });
             }
         }
@@ -371,8 +370,30 @@ cardSpritesImg.src = 'img/cards.gif';
 
 var uiStore = (function() {
     var fNumPlayers = function(state, action) { if(state === undefined) { return null; } return state; };
-    var fCurrentPhase = function(state, action) { if(state === undefined) { return null; } return state; };
-    var fCurrentActor = function(state, action) { if(state === undefined) { return null; } return state; };
+
+    var fCurrentPhase = function(state, action) {
+        if(state === undefined) {
+            return null;
+        }
+
+        if(action.type === 'STATE DELTA' && action.change === 'PHASE') {
+            return action.phase;
+        }
+
+        return state;
+    };
+
+    var fCurrentActor = function(state, action) {
+        if(state === undefined) {
+            return null;
+        }
+
+        if(action.type === 'STATE DELTA' && action.change === 'SPOTLIGHT') {
+            return action.i_spotlight;
+        }
+
+        return state;
+    };
 
     var fPlayerHand = function(state, action) {
         if(state === undefined) { return null; }
@@ -555,6 +576,12 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
                 }));
             }
         }
+        else if(message.target === 'button end init') {
+            socket.send(JSON.stringify({
+                action: 'MOVE END INIT'
+            }));
+        }
+
         console.log(message); // TODO: remove
     });
 
@@ -586,6 +613,8 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
 
     // TODO: nickname choice
     // TODO: move timer
+
+    // TODO: reconnect
 
     // TODO: terminology in state keys: stack -> deck
     // TODO: restructure with ES6 imports using Babel
