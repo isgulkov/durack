@@ -210,6 +210,7 @@ cardSpritesImg.src = 'img/cards.gif';
 
         for(var i = 0; i < opponentHands.length; i++) {
             var center = opponentHandCenters[i];
+
             var handSize = opponentHands[i].numCards;
 
             var cardSpacing = Math.min(10, 100 / handSize);
@@ -225,15 +226,16 @@ cardSpritesImg.src = 'img/cards.gif';
             this.save();
 
             this.font = '16px Helvetica, sans-serif';
-
-            var nicknameMetrics = this.measureText(nickname);
+            this.textAlign = 'center';
+            this.textBaseline = 'middle';
 
             this.fillStyle = 'white';
 
+            var nicknameWidth = this.measureText(nickname).width;
             this.fillRect(
-                center.x - nicknameMetrics.width / 1.9 - 10,
+                center.x - nicknameWidth / 1.9 - 10,
                 center.y + CARD_HEIGHT / 2 + 4,
-                nicknameMetrics.width + 20,
+                nicknameWidth + 20,
                 20
             );
 
@@ -241,8 +243,8 @@ cardSpritesImg.src = 'img/cards.gif';
 
             this.fillText(
                 nickname,
-                center.x - nicknameMetrics.width / 1.9,
-                center.y + CARD_HEIGHT / 2 + 18
+                center.x,
+                center.y + CARD_HEIGHT / 2 + 14
             );
 
             this.restore();
