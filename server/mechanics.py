@@ -164,13 +164,14 @@ class GameState:
 
     def process_move(self, player_uid, move):
         if move['action'] == 'MOVE PUT':
-            if not self.apply_put_move(player_uid, Card(**move['card'])):
-                raise IllegalMoveException("Illegal move tralala") # TODO: add details
+            if not self._apply_put_move(player_uid, Card(**move['card'])):
+                raise IllegalMoveException("Illegal put move") # TODO: add details
         elif move['action'] == 'MOVE END INIT':
             if self.phase == 'init' and self.spotlight == player_uid and len(self.table_stacks) != 0:
                 self._end_init_phase()
         elif move['action'] == 'MOVE DEFEND':
-            pass
+            if not self._apply_defend_move(player_uid, Card(**move['card']), move['i_stack']):
+                raise IllegalMoveException("Illagal defend move") # TODO: add details
         else:
             raise ValueError("Unknown type of move `%s`" % move['action'])
 
@@ -196,7 +197,7 @@ class GameState:
 
         return False
 
-    def apply_put_move(self, player_uid, card):
+    def _apply_put_move(self, player_uid, card):
         """
         Apply to the current state an init move (to put the specified card on the table) by the specified player
         :return: List of state deltas to be sent to each player
@@ -216,17 +217,7 @@ class GameState:
                 'card': card.as_dict()
             })
 
-        for i, (uid, name) in enumerate(self.players):
-            if player_uid == uid:
-                self.send_message(uid, {
-                    'change': 'REMOVE FROM PLAYER HAND',
-                    'card': card.as_dict()
-                })
-            else:
-                self.send_message(uid, {
-                    'change': 'REMOVE FROM OPPONENT HAND',
-                    'i_opponent': self.relative_index_of_other_player(uid, player_uid) - 1
-                })
+        self._send_remove_from_hand(player_uid, card)
 
         if not self._put_possible(player_uid):
             self._end_init_phase()
@@ -267,14 +258,18 @@ class GameState:
                 'i_spotlight': self.relative_index_of_other_player(uid, self.spotlight)
             })
 
-    def is_valid_defend_move(self, player_uid, card, i_stack):
+    def _is_valid_defend_move(self, player_uid, card, i_stack):
         if self.phase != 'follow' or self.spotlight != player_uid:
             return False
 
         if card not in self.player_hands[player_uid]:
             return False
 
-        top, bottom = self.table_stacks[i_stack]
+        if not (0 <= i_stack < len(self.table_stacks)):
+            return False
+
+        top = self.table_stacks[i_stack]['top']
+        bottom = self.table_stacks[i_stack]['bottom']
 
         if bottom is not None:
             return False
@@ -287,9 +282,26 @@ class GameState:
 
         return False
 
+    def _apply_defend_move(self, player_uid, card, i_stack):
+        if not self._is_valid_defend_move(player_uid, card, i_stack):
+            return False
+
+        self.table_stacks[i_stack]['bottom'] = card
+
+        self._send_remove_from_hand(player_uid, card)
+
+        for uid, name in self.players:
+            self.send_message(uid, {
+                'change': 'PUT ONTO STACK',
+                'i_stack': i_stack,
+                'card': card.as_dict()
+            })
+
+        return True
+
     # Reaction TODO: think of a better name, LOL
 
-    def add_message_handler(self, handler):
+    def add_message_handler(self, handler): # TODO: rename them to update handlers
         self.message_handlers.add(handler)
 
         return lambda: self.message_handlers.remove(handler)
@@ -297,6 +309,19 @@ class GameState:
     def send_message(self, player_uid, message):
         for handler in self.message_handlers:
             handler(player_uid, message)
+
+    def _send_remove_from_hand(self, player_uid, card):
+        for i, (uid, name) in enumerate(self.players):
+            if player_uid == uid:
+                self.send_message(uid, {
+                    'change': 'REMOVE FROM PLAYER HAND',
+                    'card': card.as_dict()
+                })
+            else:
+                self.send_message(uid, {
+                    'change': 'REMOVE FROM OPPONENT HAND',
+                    'i_opponent': self.relative_index_of_other_player(uid, player_uid) - 1
+                })
 
     # Representation
 

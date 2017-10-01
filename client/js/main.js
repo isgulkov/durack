@@ -459,11 +459,22 @@ var uiStore = (function() {
         }
 
         if(action.type === 'STATE DELTA' && action.change === 'PUT ON TABLE') {
+            var appendedState = state.slice(0);
 
-            state.push({
+            appendedState.push({
                 'top': action.card,
                 'bottom': null
-            })
+            });
+
+            return appendedState;
+        }
+        else if(action.type === 'STATE DELTA' && action.change === 'PUT ONTO STACK') {
+            var mutatedState = state.slice(0);
+
+            mutatedState[action.i_stack].bottom = action.card;
+
+            return mutatedState;
+
         }
 
         return state;
@@ -649,11 +660,19 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
                 action: 'MOVE END INIT'
             }));
         }
-
-        if(message.target === 'cancel defend move') {
+        else if(message.target === 'cancel defend move') {
             uiStore.dispatch({
                 type: 'CANCEL DEFEND'
             })
+        }
+        else if(message.target === 'table stack') {
+            if(gameState.defendMoveCard) {
+                socket.send(JSON.stringify({
+                    action: 'MOVE DEFEND',
+                    card: gameState.defendMoveCard,
+                    i_stack: message.data
+                }))
+            }
         }
 
         // TODO: process other button
@@ -681,11 +700,13 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
     socket.onmessage = function(event) {
         var action = JSON.parse(event.data);
 
+        console.log("From socket:", action);
+
         uiStore.dispatch(action);
     };
 
-    // TODO: ui buttons for follow moves
-    // TODO: all the same shit for follow moves
+    // TODO: phase transitions during follow
+    // TODO: players finishing the game
 
     // TODO: nickname choice
     // TODO: move timer
