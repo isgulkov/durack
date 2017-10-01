@@ -161,7 +161,9 @@ cardSpritesImg.src = 'img/cards.gif';
                     yOffset - 4,
                     CARD_WIDTH + 8,
                     CARD_HEIGHT + 8,
-                    'blue'
+                    'blue',
+                    16,
+                    'white'
                 );
             }
         }
@@ -188,7 +190,7 @@ cardSpritesImg.src = 'img/cards.gif';
             }
             else if(defendMoveCard) {
                 this.drawButton(
-                    "Положить сюда",
+                    "",
                     {
                         target: 'table stack',
                         data: i
@@ -196,7 +198,8 @@ cardSpritesImg.src = 'img/cards.gif';
                     bottomCardX,
                     bottomCardY,
                     CARD_WIDTH,
-                    CARD_HEIGHT
+                    CARD_HEIGHT,
+                    'black'
                 )
             }
         }
@@ -276,7 +279,8 @@ cardSpritesImg.src = 'img/cards.gif';
         }
     };
 
-    CanvasRenderingContext2D.prototype.drawButton = function(text, message, x, y, width, height, color) {
+    CanvasRenderingContext2D.prototype.drawButton = function(text, message, x, y, width, height, color, fontSize,
+                                                             textColor) {
         this.save();
 
         this.globalAlpha = 0.4;
@@ -286,8 +290,8 @@ cardSpritesImg.src = 'img/cards.gif';
 
         this.globalAlpha = 1.0;
 
-        this.fillStyle = 'black';
-        this.font = '25px Georgia, serif';
+        this.fillStyle = textColor || 'black';
+        this.font = (fontSize || 24) + 'px Georgia, serif';
         this.textAlign = 'center';
         this.textBaseline = 'middle';
 
