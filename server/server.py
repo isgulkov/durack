@@ -47,7 +47,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     game_states = {}
 
-    MIN_NUM_PLAYERS = 2 # TODO: Apply some logic to it
+    MIN_NUM_PLAYERS = 3 # TODO: Apply some logic to it
 
     def get_compression_options(self):
         # Non-None enables compression with default options.

@@ -328,10 +328,10 @@ cardSpritesImg.src = 'img/cards.gif';
                 target: 'button take'
             });
         }
-        else if(gameState.currentPhase === 'init' && gameState.currentActor === 0) {
-            // TODO: implement this behavior for follow-ups
-
-            var followPossible = false;
+        else if((gameState.currentPhase === 'init' && gameState.currentActor === 0)
+                    || (!gameState.optedEndMove
+                            && gameState.currentPhase === 'follow' && gameState.currentActor !== 0)) {
+            var putPossible = false;
 
             for(var i = 0; i < gameState.playerHand.length; i++) {
                 var playerCard = gameState.playerHand[i];
@@ -340,24 +340,24 @@ cardSpritesImg.src = 'img/cards.gif';
                     var stack = gameState.tableStacks[j];
 
                     if(playerCard.rank === stack.top.rank) {
-                        followPossible = true;
+                        putPossible = true;
                         break;
                     }
 
                     if(stack.bottom !== null && playerCard.rank === stack.bottom.rank) {
-                        followPossible = true;
+                        putPossible = true;
                         break;
                     }
                 }
 
-                if(followPossible) {
+                if(putPossible) {
                     break;
                 }
             }
 
-            if(followPossible) {
+            if(putPossible) {
                 this.drawBigButton("Закончить ход", {
-                    target: 'button end init'
+                    target: 'button end move'
                 });
             }
         }
@@ -560,6 +560,23 @@ var uiStore = (function() {
         return state;
     };
 
+    var fOptedEndMove = function(state, action) {
+        if(state === undefined) {
+            return false;
+        }
+
+        if(action.type === 'STATE DELTA') {
+            if(action.change === 'PUT ON TABLE' || action.change === 'PUT ONTO STACK' || action.change === 'PHASE') {
+                return false;
+            }
+        }
+        else if(action.type === 'OPT TO END MOVE') {
+            return true;
+        }
+
+        return state;
+    };
+
     var fInitializedGame = Redux.combineReducers({
         numPlayers: fNumPlayers,
         currentPhase: fCurrentPhase,
@@ -570,7 +587,8 @@ var uiStore = (function() {
         leftoverStackSize: fLeftoverStackSize,
         bottomCard: fBottomCard,
         playedStackSize: fPlayedStackSize,
-        defendMoveCard: fDefendMoveCard // TODO: move this (and all buttons?) out of game state ?
+        defendMoveCard: fDefendMoveCard, // TODO: move these out of the game state
+        optedEndMove: fOptedEndMove
     });
 
     var fGame = function(state, action) {
@@ -698,10 +716,14 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
                 }));
             }
         }
-        else if(message.target === 'button end init') {
+        else if(message.target === 'button end move') {
             socket.send(JSON.stringify({
-                action: 'MOVE END INIT'
+                action: 'MOVE END'
             }));
+
+            uiStore.dispatch({
+                type: 'OPT TO END MOVE'
+            })
         }
         else if(message.target === 'cancel defend move') {
             uiStore.dispatch({
@@ -722,8 +744,6 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
                 action: 'MOVE TAKE'
             }));
         }
-
-        // TODO: add button for ending move during put phase
 
         console.log(message); // TODO: remove
     });
@@ -754,7 +774,6 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
     };
 
     // TODO: players finishing the game
-    // TODO: option for non-spotlight to end move during follow phase
 
     // TODO: nickname choice
     // TODO: move timer

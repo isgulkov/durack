@@ -100,6 +100,8 @@ class GameState:
 
         self.bottom_card = bottom_card
 
+        self.end_move_votes = [False for _ in players]
+
         self._update_handlers = set()
 
     # Creation
@@ -166,9 +168,19 @@ class GameState:
         if move['action'] == 'MOVE PUT':
             if not self._apply_put_move(player_uid, Card(**move['card'])):
                 raise IllegalMoveException("Illegal put move") # TODO: add details
-        elif move['action'] == 'MOVE END INIT':
+        elif move['action'] == 'MOVE END':
             if self.phase == 'init' and self.spotlight == player_uid and len(self.table_stacks) != 0:
                 self._end_init_phase()
+            elif self.phase == 'follow' and self.spotlight != player_uid:
+                i_player = self._index_of_player(player_uid)
+
+                if self.end_move_votes[i_player]:
+                    logging.warn("Player %s voted to end move even though he has already" % self)
+
+                self.end_move_votes[i_player] = True
+
+                if self._follow_phase_ended():
+                    self._end_follow_phase()
         elif move['action'] == 'MOVE DEFEND':
             if not self._apply_defend_move(player_uid, Card(**move['card']), move['i_stack']):
                 raise IllegalMoveException("Illegal defend move") # TODO: add details
@@ -227,6 +239,9 @@ class GameState:
         if not self._put_possible(player_uid):
             self._end_init_phase()
 
+        # TODO: put these somewhere more appropriate
+        self.end_move_votes = [False for _ in self.players]
+
         return True
 
     def _put_possible(self, player_uid):
@@ -237,6 +252,11 @@ class GameState:
                 return True
 
         return False
+
+    def _any_put_possible(self):
+        # TODO: implement ?
+
+        pass
 
     def _end_init_phase(self):
         if self.phase != 'init':
@@ -303,8 +323,14 @@ class GameState:
                 'card': card.as_dict()
             })
 
+        for i, (uid, name) in enumerate(self.players):
+            if self._put_possible(uid):
+                self.end_move_votes[i] = False
+
         if self._follow_phase_ended():
             self._end_follow_phase()
+
+        self.end_move_votes = [False for _ in self.players]
 
         return True
 
@@ -312,8 +338,11 @@ class GameState:
         if any(stack['bottom'] is None for stack in self.table_stacks):
             return False
 
-        for uid, name in self.players:
+        for i, (uid, name) in enumerate(self.players):
             if uid == self.spotlight:
+                continue
+
+            if self.end_move_votes[i]:
                 continue
 
             for card in self.player_hands[uid]:
