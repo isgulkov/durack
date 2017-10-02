@@ -55,6 +55,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         logging.info("%s connected", self)
 
         # TODO: make games persistent between connections (uuid cookie, initialize)
+        self.nickname = "Player" # TODO: initialize from cookie or by client
 
         pass
 
@@ -68,7 +69,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def initialize_game(self, player_connections):
-        new_state = GameState.random_state([(p, "pidor") for p in player_connections])
+        new_state = GameState.random_state([(p, p.nickname) for p in player_connections])
 
         def send_state_update(connection, update):
             update['type'] = 'STATE DELTA'
@@ -104,6 +105,17 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
             cls.update_num_looking_for_game()
 
+    def set_nickname(self, nickname):
+        if not (0 < len(nickname) <= 64):
+            return
+
+        self.nickname = nickname
+
+        self.write_message(json.dumps({
+            'type': 'CONFIRM SET NICKNAME',
+            'newNickname': nickname
+        }))
+
     def on_message(self, message):
         msg = json.loads(message)
 
@@ -118,6 +130,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             self.write_message(json.dumps({
                 'type': 'STOPPED LOOKING FOR GAME'
             }))
+        elif msg['action'] == 'SET NICKNAME':
+            self.set_nickname(msg['newNickname'])
         elif msg['action'][:4] == 'MOVE':
             if self not in self.game_states:
                 logging.warning("Player %s issued a move but doesn't participate in known games")

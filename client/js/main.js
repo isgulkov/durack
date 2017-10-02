@@ -687,10 +687,55 @@ var uiStore = (function() {
             return state;
         };
 
+        var fCurrentNickname = function(state, action) {
+            if(state === undefined) {
+                return "Игрок"; // TODO: magic value
+            }
+
+            if(action.type === 'CONFIRM SET NICKNAME') {
+                return action.newNickname;
+            }
+
+            return state;
+        };
+
+        var fNicknamePrompt = function(state, action) {
+            if(state === undefined) {
+                return "";
+            }
+
+            if(action.type === 'CLICK SET NICKNAME' && state === "") {
+                return uiStore.getState().menu.currentNickname;
+            }
+            else if(action.type === 'CONFIRM SET NICKNAME') {
+                return "";
+            }
+
+            return state;
+        };
+
+        var fChangingNickname = function(state, action) {
+            if(state === undefined) {
+                return false;
+            }
+
+            if(action.type === 'CLICK SET NICKNAME') {
+                return true;
+            }
+            else if(action.type === 'CONFIRM SET NICKNAME') {
+                return false;
+            }
+
+            return state;
+        };
+
         return Redux.combineReducers({
             displayed: fDisplayed,
             status: fStatus,
-            numLooking: fNumLooking
+            numLooking: fNumLooking,
+            currentNickname: fCurrentNickname,
+            nicknamePrompt: fNicknamePrompt,
+            changingNickname: fChangingNickname
         })
     }();
 
@@ -703,6 +748,8 @@ var uiStore = (function() {
 }());
 
 var handleMenuUpdate = function() {
+    // TODO: redo all this mess in react or just in some better way
+
     var menuState = uiStore.getState().menu;
 
     document.getElementById('menu_container').style.display = menuState.displayed ? 'block' : 'none';
@@ -716,6 +763,15 @@ var handleMenuUpdate = function() {
     }
 
     document.getElementById('end_game_summary').style.display = (menuState.status === 'game end') ? 'block' : 'none';
+
+    document.getElementById('nickname_display').style.display = menuState.changingNickname ? 'none' : 'inline';
+    document.getElementById('nickname_display').innerHTML = menuState.currentNickname;
+
+    document.getElementById('nickname_input').style.display = menuState.changingNickname ? 'inline' : 'none';
+    document.getElementById('nickname_input').value = menuState.nicknamePrompt;
+
+    document.getElementById('nickname_submit').style.display = menuState.changingNickname ? 'inline' : 'none';
+    document.getElementById('change_nickname').style.display = menuState.changingNickname ? 'none' : 'inline';
 };
 
 var handleGameUpdate = function() {
@@ -789,7 +845,7 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
             }));
         }
 
-        console.log(message); // TODO: remove
+        console.log(message); // TODO: remove at some point
     });
 
     window.requestAnimationFrame(function() {
@@ -809,6 +865,19 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
         }));
     };
 
+    document.getElementById('change_nickname').onclick = function() {
+        uiStore.dispatch({
+            type: 'CLICK SET NICKNAME'
+        })
+    };
+
+    document.getElementById('nickname_submit').onclick = function() {
+        socket.send(JSON.stringify({
+            action: 'SET NICKNAME',
+            newNickname: document.getElementById('nickname_input').value
+        }))
+    };
+
     socket.onmessage = function(event) {
         var action = JSON.parse(event.data);
 
@@ -818,21 +887,25 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
     };
 
     // TODO: move timer
-    // TODO: nickname choice
     // TODO: fix table stack buttons not disappearing after defend move
     // TODO: end game summary
 
     // TODO: render server address into index.html
-    // TODO: end move during follow when defending player all out of cards
+    // TODO: auto end move during follow when defending player all out of cards
+    // TODO: terminology in state keys: stack -> deck
+
     // TODO: reconnect in menu
     // TODO: persist game state across sessions
+    // TODO: private games by link
 
-    // TODO: terminology in state keys: stack -> deck
     // TODO: split JS into ES6 modules (using Babel?)
     // TODO: split server state into more classes
     // TODO: start writing unit tests for all of this
 
     // TODO: ability to withdraw cards
+
+    // TODO: switch to binary (think how to do this while maintaining readability)
+    // TODO: scale (separate lobby server, multiple game servers)
 };
 
 document.addEventListener('DOMContentLoaded', function() {
