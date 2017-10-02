@@ -819,15 +819,20 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
 
     // TODO: move timer
     // TODO: nickname choice
-
     // TODO: fix table stack buttons not disappearing after defend move
+    // TODO: end game summary
 
+    // TODO: render server address into index.html
+    // TODO: end move during follow when defending player all out of cards
     // TODO: reconnect in menu
     // TODO: persist game state across sessions
 
     // TODO: terminology in state keys: stack -> deck
-    // TODO: restructure with ES6 imports using Babel
-    // TODO: deployment and serve static
+    // TODO: split JS into ES6 modules (using Babel?)
+    // TODO: split server state into more classes
+    // TODO: start writing unit tests for all of this
+
+    // TODO: ability to withdraw cards
 };
 
 document.addEventListener('DOMContentLoaded', function() {

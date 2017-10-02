@@ -20,26 +20,24 @@ from mechanics import GameState, IllegalMoveException
 class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r'/', MainHandler),
             (r'/game', GameSocketHandler),
+
+            (r'/', IndexHandler),
+            (r'/(.*)', tornado.web.StaticFileHandler, {'path': '../client'}),
         ]
 
         settings = dict(
             # cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
-            template_path=os.path.join(os.path.dirname(__file__), "../client"),
-            static_path=os.path.join(os.path.dirname(__file__), "../client"),
+            template_path=os.path.join(os.path.dirname(__file__), "../client")
             # xsrf_cookies=True,
         )
 
         super(Application, self).__init__(handlers, **settings)
 
 
-class MainHandler(tornado.web.RequestHandler):
+class IndexHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render("index.html")
-
-    def data_received(self, chunk):
-        pass
+        self.render("../client/index.html")
 
 
 class GameSocketHandler(tornado.websocket.WebSocketHandler):
