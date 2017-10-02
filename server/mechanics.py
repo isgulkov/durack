@@ -90,8 +90,10 @@ class GameState:
         self.phase = 'init'
         self.spotlight = players[0][0]
 
-        self.players = players
+        self.players = players # TODO: Replace with just uids instead of tuples, put nicknames into a separate dict
         self.player_hands = player_hands
+
+        self.in_game = {uid: True for uid, name in self.players}
 
         self.table_stacks = table_stacks
 
@@ -165,6 +167,10 @@ class GameState:
     # Mutation
 
     def process_move(self, player_uid, move):
+        # TODO: extract methods related to moves into individual Move classes, methods related to update notifications
+        # TODO: into separate "Notifier" class, method related to player state into separate Player class.
+        # TODO: This is 550 LOC already ffs
+
         if move['action'] == 'MOVE PUT':
             if not self._apply_put_move(player_uid, Card(**move['card'])):
                 raise IllegalMoveException("Illegal put move") # TODO: add details
@@ -258,11 +264,6 @@ class GameState:
 
         return False
 
-    def _any_put_possible(self):
-        # TODO: implement ?
-
-        pass
-
     def _end_init_phase(self):
         if self.phase != 'init':
             raise IllegalMoveException("Not in init phase")
@@ -277,10 +278,16 @@ class GameState:
                 'phase': 'follow'
             })
 
-    def _advance_spotlight(self):
+    def _advance_spotlight_to_next(self):
         i_new_spotlight = (self._index_of_player(self.spotlight) + 1) % len(self.players)
 
         self.spotlight = self.players[i_new_spotlight][0]
+
+    def _advance_spotlight(self):
+        self._advance_spotlight_to_next()
+
+        while not self.in_game[self.spotlight]:
+            self._advance_spotlight_to_next()
 
         for uid, name in self.players:
             self._send_update(uid, {
@@ -433,6 +440,27 @@ class GameState:
 
         self._hand_out_cards()
 
+        self._handle_players_finishing()
+
+        if sum(1 for uid, name in self.players if self.in_game[uid]) == 1:
+            self._end_game()
+
+        if not self.in_game[self.spotlight]:
+            self._advance_spotlight()
+
+    def _end_game(self):
+        for uid, name in self.players:
+            self._send_update(uid, {
+                'change': 'GAME ENDED',
+                'results': [name for uid, name in self.players]
+            })
+
+    def _handle_players_finishing(self):
+        for uid, name in self.players:
+            if self.in_game[uid] and len(self.player_hands[uid]) == 0:
+                self.in_game[uid] = False
+                self._send_player_out_of_game(uid)
+
     # Reaction TODO: think of a better name, LOL
 
     def add_update_handler(self, handler): # TODO: rename them to update handlers
@@ -492,6 +520,13 @@ class GameState:
                 'numCards': num_cards
             })
 
+    def _send_player_out_of_game(self, player_uid):
+        for uid, name in self.players:
+            self._send_update(uid, {
+                'change': 'PLAYER OUT OF GAME',
+                'i_opponent': self._relative_index_of_other_player(uid, player_uid) - 1
+            })
+
     # Representation
 
     def as_dict_for_player(self, player_uid):
@@ -519,7 +554,8 @@ class GameState:
             'opponents': [
                 {
                     'nickname': name,
-                    'numCards': len(self.player_hands[uid])
+                    'numCards': len(self.player_hands[uid]),
+                    'inGame': self.in_game[uid]
                 } for (uid, name) in shifted_opponents
             ],
 

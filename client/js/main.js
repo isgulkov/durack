@@ -251,6 +251,10 @@ cardSpritesImg.src = 'img/cards.gif';
 
             this.fillStyle = 'white';
 
+            if(!opponentHands[i].inGame) {
+                this.globalAlpha = 0.5;
+            }
+
             var nicknameWidth = this.measureText(nickname).width;
             this.fillRect(
                 center.x - nicknameWidth / 1.9 - 10,
@@ -513,26 +517,32 @@ var uiStore = (function() {
     };
 
     var fOpponents = function(state, action) {
-        if(state === undefined) { return null; }
-
-        if(action.type === 'STATE DELTA' && action.change === 'REMOVE FROM OPPONENT HAND') {
-            console.log(state, action);
-
-            var decreasedState = state.slice(0);
-
-            decreasedState[action.i_opponent].numCards -= 1;
-
-            return decreasedState;
+        if(state === undefined) {
+            return null;
         }
 
-        if(action.type === 'STATE DELTA' && action.change === 'ADD TO OPPONENT HAND') {
-            console.log(state, action);
+        if(action.type === 'STATE DELTA') {
+            if(action.change === 'REMOVE FROM OPPONENT HAND') {
+                var decreasedState = state.slice(0);
 
-            var increasedState = state.slice(0);
+                decreasedState[action.i_opponent].numCards -= 1;
 
-            increasedState[action.i_opponent].numCards += action.numCards;
+                return decreasedState;
+            }
+            else if(action.change === 'ADD TO OPPONENT HAND') {
+                var increasedState = state.slice(0);
 
-            return increasedState;
+                increasedState[action.i_opponent].numCards += action.numCards;
+
+                return increasedState;
+            }
+            else if(action.change === 'PLAYER OUT OF GAME') {
+                var outedState = state.slice(0); // TODO: these variable names...
+
+                outedState[action.i_opponent].inGame = false;
+
+                return outedState;
+            }
         }
 
         return state;
@@ -637,6 +647,9 @@ var uiStore = (function() {
             if(action.type === 'INITIALIZE GAME') {
                 return false;
             }
+            else if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
+                return true;
+            }
 
             return state;
         };
@@ -652,8 +665,11 @@ var uiStore = (function() {
             else if(action.type === 'STOPPED LOOKING FOR GAME') {
                 return 'initial';
             }
-            if(action.type === 'INITIALIZE GAME') {
+            else if(action.type === 'INITIALIZE GAME') {
                 return 'in game';
+            }
+            else if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
+                return 'game end';
             }
 
             return state;
@@ -698,6 +714,8 @@ var handleMenuUpdate = function() {
     else {
         document.getElementById('message_looking_for_game').style.display = 'none';
     }
+
+    document.getElementById('end_game_summary').style.display = (menuState.status === 'game end') ? 'block' : 'none';
 };
 
 var handleGameUpdate = function() {
@@ -718,6 +736,10 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
 
     ctx.clickHandlers = []; // TODO: move somewhere else
     ctx.clickHandlers.push(function(message) {
+        if(uiStore.getState().menu.status === 'game end') {
+            return;
+        }
+
         var gameState = uiStore.getState().game;
 
         if(message.target === 'card in hand') {
@@ -795,11 +817,10 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
         uiStore.dispatch(action);
     };
 
-    // TODO: players finishing the game
-    // TODO: draw empty opponent hands
-
     // TODO: move timer
     // TODO: nickname choice
+
+    // TODO: fix table stack buttons not disappearing after defend move
 
     // TODO: reconnect in menu
     // TODO: persist game state across sessions
