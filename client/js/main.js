@@ -389,6 +389,26 @@ cardSpritesImg.src = 'img/cards.gif';
         }
     };
 
+    CanvasRenderingContext2D.prototype.drawTimer = function(timer, currentPhase, currentActor) {
+        console.log(timer);
+
+        if(!timer) {
+            return;
+        }
+
+        var minutes = Math.floor(timer.numSeconds / 60);
+        var seconds = Math.floor(timer.numSeconds % 60);
+
+        var text = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+
+        this.fillStyle = 'black';
+        this.font = '32px serif';
+        this.textAlign = 'center';
+        this.textBaseline = 'middle';
+
+        this.fillText(text, this.canvas.width / 2, this.canvas.height - 225);
+    };
+
     CanvasRenderingContext2D.prototype.displayGameState = function(gameState) {
         this.clickAreas = [];
 
@@ -406,6 +426,8 @@ cardSpritesImg.src = 'img/cards.gif';
             this.drawPlayedStack(gameState.playedStackSize);
 
             this.drawButtons(gameState);
+
+            this.drawTimer(gameState.timer, gameState.currentPhase, gameState.currentActor);
 
             // TODO: move out of this method, assign once
 
@@ -592,6 +614,45 @@ var uiStore = (function() {
         return state;
     };
 
+    var fTimer = function(state, action) {
+        console.log("fTimer", state, action);
+
+        if(state === undefined) {
+            return null;
+        }
+
+        if(action.type === 'TIMER TICK' && state !== null) {
+            if(state.numSeconds === 0) {
+                clearInterval(state.interval);
+
+                return null;
+            }
+            else {
+                return Object.assign({}, state, {
+                    numSeconds: state.numSeconds - 1
+                });
+            }
+        }
+        else if(action.type === 'SET TIMER') {
+            if(state !== null) {
+                clearInterval(state.interval);
+            }
+
+            return {
+                numSeconds: action.numSeconds,
+                interval: setInterval(function() {
+                    console.log("will tick");
+
+                    uiStore.dispatch({
+                        type: 'TIMER TICK'
+                    });
+                }, 1000)
+            }
+        }
+
+        return state;
+    };
+
     var fOptedEndMove = function(state, action) {
         if(state === undefined) {
             return false;
@@ -619,7 +680,8 @@ var uiStore = (function() {
         leftoverStackSize: fLeftoverStackSize,
         bottomCard: fBottomCard,
         playedStackSize: fPlayedStackSize,
-        defendMoveCard: fDefendMoveCard, // TODO: move these out of the game state
+        defendMoveCard: fDefendMoveCard, // TODO: move these out of the game state (or rename the "game state"?)
+        timer: fTimer,
         optedEndMove: fOptedEndMove
     });
 
@@ -629,7 +691,7 @@ var uiStore = (function() {
         }
 
         if(action.type === 'INITIALIZE GAME') {
-            return action.init_state;
+            return fGame(action.init_state, {type: NaN});
         }
         else if(state !== 'no game') {
             return fInitializedGame(state, action);
@@ -887,12 +949,13 @@ var initializeProgram = function() {var canvas = document.getElementById('main_c
     };
 
     // TODO: move timer
-    // TODO: fix table stack buttons not disappearing after defend move
     // TODO: end game summary
 
     // TODO: render server address into index.html
     // TODO: auto end move during follow when defending player all out of cards
-    // TODO: terminology in state keys: stack -> deck
+
+    // TODO: fix table stack buttons sometimes not disappearing after defend move
+    // TODO: naming: stack -> deck in state keys, camelcase in network dict keys, spotlight/actor, etc
 
     // TODO: reconnect in menu
     // TODO: persist game state across sessions
