@@ -50,7 +50,7 @@ class Card:
                 yield Card(suit, rank)
 
     @classmethod
-    def _get_shuffled_deck(cls):
+    def get_shuffled_deck(cls):
         return urandom_shuffled(cls.all_cards())
 
     def __init__(self, suit, rank):
@@ -85,12 +85,13 @@ class Card:
             'rank': self.rank
         }
 
+
 class GameState:
     def __init__(self, players, player_hands, table_stacks, leftover_deck, played_deck, bottom_card):
         self.phase = 'init'
         self.spotlight = players[0][0]
 
-        self.players = players # TODO: Replace with just uids instead of tuples, put nicknames into a separate dict
+        self.players = players  # TODO: Replace with just uids instead of tuples, put nicknames into a separate dict
         self.player_hands = player_hands
 
         self.in_game = {uid: True for uid, name in self.players}
@@ -110,7 +111,7 @@ class GameState:
 
     @classmethod
     def random_state(cls, players):
-        deck = Card._get_shuffled_deck()
+        deck = Card.get_shuffled_deck()
 
         bottom_card = deck[0]
 
@@ -173,7 +174,7 @@ class GameState:
 
         if move['action'] == 'MOVE PUT':
             if not self._apply_put_move(player_uid, Card(**move['card'])):
-                raise IllegalMoveException("Illegal put move") # TODO: add details
+                raise IllegalMoveException("Illegal put move")  # TODO: add details
         elif move['action'] == 'MOVE END':
             if self.phase == 'init' and self.spotlight == player_uid and len(self.table_stacks) != 0:
                 self._end_init_phase()
@@ -189,10 +190,10 @@ class GameState:
                     self._end_follow_phase()
         elif move['action'] == 'MOVE DEFEND':
             if not self._apply_defend_move(player_uid, Card(**move['card']), move['i_stack']):
-                raise IllegalMoveException("Illegal defend move") # TODO: add details
+                raise IllegalMoveException("Illegal defend move")  # TODO: add details
         elif move['action'] == 'MOVE TAKE':
             if not self._apply_take_move(player_uid):
-                raise IllegalMoveException("Illegal take move") # TODO: add details
+                raise IllegalMoveException("Illegal take move")  # TODO: add details
         else:
             raise ValueError("Unknown type of move `%s`" % move['action'])
 
@@ -463,7 +464,7 @@ class GameState:
 
     # Reaction TODO: think of a better name, LOL
 
-    def add_update_handler(self, handler): # TODO: rename them to update handlers
+    def add_update_handler(self, handler):  # TODO: rename them to update handlers
         self._update_handlers.add(handler)
 
         return lambda: self._update_handlers.remove(handler)
@@ -495,7 +496,7 @@ class GameState:
             else:
                 self._send_update(uid, {
                     'change': 'ADD TO OPPONENT HAND',
-                    #vvv TODO: unify case in these messages (camel case as in JS or underscore as in Python)
+                    # vv TODO: unify case in these messages (camel case as in JS or underscore as in Python)
                     'i_opponent': self._relative_index_of_other_player(uid, player_uid) - 1,
                     'numCards': len(cards)
                 })
@@ -569,7 +570,7 @@ class GameState:
 
 
 if __name__ == '__main__':
-    for c in Card._get_shuffled_deck():
+    for c in Card.get_shuffled_deck():
         print c,
 
     print
