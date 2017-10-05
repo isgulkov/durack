@@ -166,7 +166,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             while len(new_players) < 6 and len(self.matchmaking_pool) != 0:
                 new_players.append(self.matchmaking_pool.pop())
 
-                self.initialize_game(new_players)
+            self.initialize_game(new_players)
 
     def data_received(self, chunk):
         pass
