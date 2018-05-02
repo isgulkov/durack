@@ -633,7 +633,7 @@ var uiStore = (function() {
                 });
             }
         }
-        else if(action.type === 'SET TIMER') {
+        else if(action.type === 'STATE DELTA' && action.change === 'SET TIMER') {
             if(state !== null) {
                 clearInterval(state.interval);
             }

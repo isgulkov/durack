@@ -44,6 +44,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     matchmaking_pool = set()
 
     game_states = {}
+    timers = {}
 
     MIN_NUM_PLAYERS = 3 # TODO: Apply some logic to it
 
@@ -68,25 +69,41 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             self.remove_from_matchmaking_pool(self)
 
     @classmethod
-    def initialize_game(self, player_connections):
+    def initialize_game(cls, player_connections):
         new_state = GameState.random_state([(p, p.nickname) for p in player_connections])
 
         def send_state_update(connection, update):
-            update['type'] = 'STATE DELTA'
+            if 'type' not in update:
+                update['type'] = 'STATE DELTA'
 
             connection.write_message(update)
 
         new_state.add_update_handler(send_state_update)
+        new_state.add_set_timer_callback(lambda delay: cls.set_timer(new_state, delay))
 
         for p in player_connections:
-            self.game_states[p] = new_state
+            cls.game_states[p] = new_state
 
-        # TODO: move into GameState ?
-        for connection, name in new_state.players:
-            connection.write_message(json.dumps({
-                'type': 'INITIALIZE GAME',
-                'init_state': new_state.as_dict_for_player(connection)
-            }))
+        new_state.initialize()
+
+    @classmethod
+    def set_timer(cls, game, delay):
+        if not isinstance(game, GameState):
+            raise TypeError("Unsupported game state %s" % game)
+
+        current_ioloop = tornado.ioloop.IOLoop.current()
+
+        if game in cls.timers:
+            current_ioloop.remove_timeout(cls.timers[game])
+
+        cls.timers[game] = current_ioloop.call_later(delay, cls.handle_timeout, game)
+
+    @classmethod
+    def handle_timeout(cls, game):
+        if not isinstance(game, GameState):
+            raise TypeError("Unsupported game state %s" % game)
+
+        game.timeout()
 
     @classmethod
     def update_num_looking_for_game(cls):
@@ -143,11 +160,6 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 game.process_move(self, msg)
             except IllegalMoveException as e:
                 logging.warning("Player %s issued an illegal move: %s" % (self, e.message, ))
-
-    @classmethod
-    def send_deltas(cls, game, delta):
-        for p in (uid for uid, name in game.players):
-            pass
 
     def find_game(self):
         self.matchmaking_pool.add(self)

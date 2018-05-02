@@ -149,6 +149,15 @@ class GameState:
 
         players[0], players[i_start] = players[i_start], players[0]
 
+    def initialize(self):
+        for uid, name in self.players:
+            self._send_update(uid, {
+                'type': 'INITIALIZE GAME',
+                'init_state': self.as_dict_for_player(uid)
+            })
+
+        self._set_timer(10)
+
     # Utility
 
     def _index_of_player(self, player_uid):
@@ -166,6 +175,18 @@ class GameState:
         return (i_other_player - i_this_player) % len(self.players)
 
     # Mutation
+
+    def _set_timer(self, delay):
+        self.set_timer(delay)
+
+        for uid, name in self.players:
+            self._send_update(uid, {
+                'change': 'SET TIMER',
+                'numSeconds': delay
+            })
+
+    def timeout(self):
+        pass
 
     def process_move(self, player_uid, move):
         # TODO: extract methods related to moves into individual Move classes, methods related to update notifications
@@ -463,6 +484,9 @@ class GameState:
                 self._send_player_out_of_game(uid)
 
     # Reaction TODO: think of a better name, LOL
+
+    def add_set_timer_callback(self, callback):
+        self.set_timer = callback
 
     def add_update_handler(self, handler):  # TODO: rename them to update handlers
         self._update_handlers.add(handler)
