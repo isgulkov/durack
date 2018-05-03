@@ -49,104 +49,8 @@ cardSpritesImg.src = 'img/cards.gif';
 // All the display code
 (function() {
 
-
-
-
-
-    CanvasRenderingContext2D.prototype.drawCard = function(card, x, y, horizontal) {
-        var offset = getCardSpriteOffset(card);
-
-        if(horizontal) {
-            this.save();
-
-            this.rotate(Math.PI / 2);
-        }
-
-        this.drawImage(cardSpritesImg, offset.x, offset.y, CARD_WIDTH, CARD_HEIGHT, x, y, CARD_WIDTH, CARD_HEIGHT);
-
-        if(horizontal) {
-            this.restore();
-        }
-    };
-
-    CanvasRenderingContext2D.prototype.drawPlayersHand = function(playerCards, defendMoveCard) {
-        var cardSpacing = Math.min(600 / playerCards.length, CARD_WIDTH + 10);
-
-        var handWidth = cardSpacing * (playerCards.length - 1) + CARD_WIDTH;
-
-        var totalLeftOffset = (this.canvas.width - handWidth) / 2;
-
-        for(var i = 0; i < playerCards.length; i++) {
-            var xOffset = totalLeftOffset + cardSpacing * i;
-            var yOffset = this.canvas.height - CARD_HEIGHT - 50;
-
-            var card = playerCards[i];
-
-            this.drawCard(card, xOffset, yOffset);
-
-            this.clickAreas.push({
-                x: xOffset,
-                y: yOffset,
-                w: CARD_WIDTH,
-                h: CARD_HEIGHT,
-                message: {
-                    target: 'card in hand',
-                    data: playerCards[i]
-                }
-            });
-
-            if(defendMoveCard && defendMoveCard.suit === card.suit && defendMoveCard.rank === card.rank) {
-                this.drawButton(
-                    "Отмена",
-                    {
-                        target: 'cancel defend move'
-                    },
-                    xOffset - 4,
-                    yOffset - 4,
-                    CARD_WIDTH + 8,
-                    CARD_HEIGHT + 8,
-                    'blue',
-                    16,
-                    'white'
-                );
-            }
-        }
-    };
-
     CanvasRenderingContext2D.prototype.drawCardsOnTable = function(tableStacks, defendMoveCard) {
-        var stackSpacing = Math.min(CARD_WIDTH + 20, (550 - CARD_WIDTH) / tableStacks.length);
 
-        var totalLeftOffset = (this.canvas.width - stackSpacing * (tableStacks.length)) / 2;
-        var topOffset = 225;
-
-        for(var i = 0; i < tableStacks.length; i++) {
-            this.drawCard(tableStacks[i].top, totalLeftOffset + (stackSpacing) * i, topOffset);
-
-            var bottomCardX = totalLeftOffset + 5 + (stackSpacing) * i;
-            var bottomCardY = topOffset + CARD_HEIGHT / 2;
-
-            if(tableStacks[i].bottom !== null) {
-                this.drawCard(
-                    tableStacks[i].bottom,
-                    bottomCardX,
-                    bottomCardY
-                );
-            }
-            else if(defendMoveCard) {
-                this.drawButton(
-                    "",
-                    {
-                        target: 'table stack',
-                        data: i
-                    },
-                    bottomCardX,
-                    bottomCardY,
-                    CARD_WIDTH,
-                    CARD_HEIGHT,
-                    'black'
-                )
-            }
-        }
     };
 
     CanvasRenderingContext2D.prototype.drawOpponentHands = function(opponentHands) {
@@ -251,35 +155,7 @@ cardSpritesImg.src = 'img/cards.gif';
 
     CanvasRenderingContext2D.prototype.drawButton = function(text, message, x, y, width, height, color, fontSize,
                                                              textColor) {
-        this.save();
 
-        this.globalAlpha = 0.4;
-
-        this.fillStyle = color || 'white';
-        this.fillRect(x, y, width, height);
-
-        this.globalAlpha = 1.0;
-
-        this.fillStyle = textColor || 'black';
-        this.font = (fontSize || 24) + 'px Georgia, serif';
-        this.textAlign = 'center';
-        this.textBaseline = 'middle';
-
-        this.fillText(
-            text,
-            x + width / 2,
-            y + height / 2
-        );
-
-        this.clickAreas.push({
-            x: x,
-            y: y,
-            w: width,
-            h: height,
-            message: message
-        });
-
-        this.restore();
     };
 
     CanvasRenderingContext2D.prototype.drawBigButton = function(text, message) {

@@ -20,6 +20,38 @@ let sendActionsMiddleware = (socket) => (store => next => action => {
             newNickname: action.newNickname
         }
     }
+    else if(action.type === 'SEND HAND SELECT') {
+        const gameState = store.getState().game;
+
+        if(gameState.currentPhase === 'follow' && gameState.currentActor === 0) {
+            store.dispatch({
+                type: 'DEFEND CLICK',
+                card: action.card
+            });
+        }
+        else {
+            // TODO: locally validate move more
+            msg = {
+                action: 'MOVE PUT',
+                card: action.card
+            };
+        }
+    }
+    else if(action.type === 'SEND TABLE STACK CLICK') {
+        const gameState = store.getState().game;
+
+        if(gameState.defendMoveCard) {
+            msg = {
+                action: 'MOVE DEFEND',
+                card: gameState.defendMoveCard,
+                i_stack: action.iStack
+            };
+
+            store.dispatch({
+                type: 'CANCEL DEFEND'
+            });
+        }
+    }
 
     if(msg !== null) {
         console.log("sending", msg);

@@ -15,7 +15,7 @@ class Card extends React.Component {
             'top': this.props.y,
 
             'background': 'url(' + cardSpriteUrl + ') ' + (-spriteOffset.x) + 'px ' + (-spriteOffset.y) + 'px',
-            'background-repeat': 'no-repeat'
+            'backgroundRepeat': 'no-repeat'
         };
 
         return s;
@@ -23,7 +23,7 @@ class Card extends React.Component {
 
     render() {
         return (
-            <div style={this.getStyle()} />
+            <div style={this.getStyle()} onClick={() => this.props.onClick()} />
         );
     }
 }
