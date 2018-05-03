@@ -60,27 +60,27 @@ let fCurrentNickname = function(state, action) {
     return state;
 };
 
-let fNicknamePrompt = function(state, action) {
-    if(state === undefined) {
-        return "";
-    }
-
-    if(action.type === 'CLICK SET NICKNAME' && state === "") {
-        return uiStore.getState().menu.currentNickname;
-    }
-    else if(action.type === 'CONFIRM SET NICKNAME') {
-        return "";
-    }
-
-    return state;
-};
+// let fNicknamePrompt = function(state, action) {
+//     if(state === undefined) {
+//         return "";
+//     }
+//
+//     if(action.type === 'CLICK CHANGE NICKNAME' && state === "") {
+//         return uiStore.getState().menu.currentNickname;
+//     }
+//     else if(action.type === 'CONFIRM SET NICKNAME') {
+//         return "";
+//     }
+//
+//     return state;
+// };
 
 let fChangingNickname = function(state, action) {
     if(state === undefined) {
         return false;
     }
 
-    if(action.type === 'CLICK SET NICKNAME') {
+    if(action.type === 'CLICK CHANGE NICKNAME') {
         return true;
     }
     else if(action.type === 'CONFIRM SET NICKNAME') {
@@ -95,7 +95,7 @@ let fMenu = combineReducers({
     status: fStatus,
     numLooking: fNumLooking,
     currentNickname: fCurrentNickname,
-    nicknamePrompt: fNicknamePrompt,
+    // nicknamePrompt: fNicknamePrompt,
     changingNickname: fChangingNickname
 });
 

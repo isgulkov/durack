@@ -1,6 +1,45 @@
 'use strict';
 
-import { createStore, combineReducers } from 'redux';
+import { createStore, applyMiddleware } from 'redux'; // React-redux
+import React from "react";
+import ReactDOM from "react-dom";
+import { Provider } from "react-redux";
+
+import { ReprGameUI } from "./components/containers/ui";
+
+import { fUiState } from "./store/ui";
+
+import { sendActionsMiddleware } from "./middleware/sendActions";
+
+// TODO: rewrite in socket.io or just implement reconnection (both sides)
+let socket = new WebSocket('ws://localhost:8888/game');
+
+let uiStore = createStore(fUiState, applyMiddleware(sendActionsMiddleware(socket)));
+
+uiStore.subscribe(() => console.log("state", uiStore.getState()));
+
+ReactDOM.render(
+    <Provider store={uiStore}>
+        <ReprGameUI/>
+    </Provider>,
+    document.getElementById('root')
+);
+
+uiStore.dispatch({
+    type: 'SOCKET READY',
+    socket: socket
+});
+
+socket.onmessage = function(event) {
+    let action = JSON.parse(event.data);
+
+    console.log("From socket:", action);
+
+    uiStore.dispatch(action);
+
+    // console.log("Here's state after update:", JSON.stringify(uiStore.getState()));
+};
+
 
 var cardSpritesImg = new Image();
 cardSpritesImg.src = 'img/cards.gif';
@@ -353,8 +392,8 @@ cardSpritesImg.src = 'img/cards.gif';
             });
         }
         else if((gameState.currentPhase === 'init' && gameState.currentActor === 0)
-                    || (!gameState.optedEndMove
-                            && gameState.currentPhase === 'follow' && gameState.currentActor !== 0)) {
+            || (!gameState.optedEndMove
+                && gameState.currentPhase === 'follow' && gameState.currentActor !== 0)) {
             var putPossible = false;
 
             for(var i = 0; i < gameState.playerHand.length; i++) {
@@ -453,7 +492,6 @@ cardSpritesImg.src = 'img/cards.gif';
     };
 }());
 
-import { uiStore } from "./store/ui";
 
 var handleMenuUpdate = function() {
     // TODO: redo all this mess in react or just in some better way
@@ -488,111 +526,113 @@ var handleGameUpdate = function() {
     });
 };
 
-uiStore.subscribe(handleMenuUpdate);
-uiStore.subscribe(handleGameUpdate);
+// uiStore.subscribe(handleMenuUpdate);
+// uiStore.subscribe(handleGameUpdate);
 
 var initializeProgram = function() {var canvas = document.getElementById('main_canvas');
-    var ctx = canvas.getContext('2d');
-
-    var socket = new WebSocket('ws://localhost:8888/game');
-
-    handleGameUpdate.ctx = ctx; // TODO: put somewhere else
-
-    ctx.clickHandlers = []; // TODO: move somewhere else
-    ctx.clickHandlers.push(function(message) {
-        if(uiStore.getState().menu.status === 'game end') {
-            return;
-        }
-
-        var gameState = uiStore.getState().game;
-
-        if(message.target === 'card in hand') {
-            if(gameState.currentPhase === 'follow' && gameState.currentActor === 0) {
-                console.log("dispatching defend click even though ", message);
-
-                uiStore.dispatch({
-                    type: 'DEFEND CLICK',
-                    card: message.data
-                });
-            }
-            else {
-                // TODO: locally validate move more
-
-                socket.send(JSON.stringify({
-                    action: 'MOVE PUT',
-                    card: message.data
-                }));
-            }
-        }
-        else if(message.target === 'button end move') {
-            socket.send(JSON.stringify({
-                action: 'MOVE END'
-            }));
-
-            uiStore.dispatch({
-                type: 'OPT TO END MOVE'
-            })
-        }
-        else if(message.target === 'cancel defend move') {
-            uiStore.dispatch({
-                type: 'CANCEL DEFEND'
-            })
-        }
-        else if(message.target === 'table stack') {
-            if(gameState.defendMoveCard) {
-                socket.send(JSON.stringify({
-                    action: 'MOVE DEFEND',
-                    card: gameState.defendMoveCard,
-                    i_stack: message.data
-                }))
-            }
-        }
-        else if(message.target === 'button take') {
-            socket.send(JSON.stringify({
-                action: 'MOVE TAKE'
-            }));
-        }
-
-        console.log(message); // TODO: remove at some point
-    });
-
-    window.requestAnimationFrame(function() {
-        handleMenuUpdate();
-        handleGameUpdate();
-    });
-
-    document.getElementById('find_game').onclick = function() {
-        socket.send(JSON.stringify({
-            action: 'FIND GAME'
-        }));
-    };
-
-    document.getElementById('cancel_find_game').onclick = function() {
-        socket.send(JSON.stringify({
-            action: 'CANCEL FIND GAME'
-        }));
-    };
-
-    document.getElementById('change_nickname').onclick = function() {
-        uiStore.dispatch({
-            type: 'CLICK SET NICKNAME'
-        })
-    };
-
-    document.getElementById('nickname_submit').onclick = function() {
-        socket.send(JSON.stringify({
-            action: 'SET NICKNAME',
-            newNickname: document.getElementById('nickname_input').value
-        }))
-    };
-
-    socket.onmessage = function(event) {
-        var action = JSON.parse(event.data);
-
-        console.log("From socket:", action);
-
-        uiStore.dispatch(action);
-    };
+    // var ctx = canvas.getContext('2d');
+    //
+    // var socket = new WebSocket('ws://localhost:8888/game');
+    //
+    // handleGameUpdate.ctx = ctx; // TODO: put somewhere else
+    //
+    // ctx.clickHandlers = []; // TODO: move somewhere else
+    // ctx.clickHandlers.push(function(message) {
+    //     if(uiStore.getState().menu.status === 'game end') {
+    //         return;
+    //     }
+    //
+    //     var gameState = uiStore.getState().game;
+    //
+    //     if(message.target === 'card in hand') {
+    //         if(gameState.currentPhase === 'follow' && gameState.currentActor === 0) {
+    //             console.log("dispatching defend click even though ", message);
+    //
+    //             uiStore.dispatch({
+    //                 type: 'DEFEND CLICK',
+    //                 card: message.data
+    //             });
+    //         }
+    //         else {
+    //             // TODO: locally validate move more
+    //
+    //             socket.send(JSON.stringify({
+    //                 action: 'MOVE PUT',
+    //                 card: message.data
+    //             }));
+    //         }
+    //     }
+    //     else if(message.target === 'button end move') {
+    //         socket.send(JSON.stringify({
+    //             action: 'MOVE END'
+    //         }));
+    //
+    //         uiStore.dispatch({
+    //             type: 'OPT TO END MOVE'
+    //         })
+    //     }
+    //     else if(message.target === 'cancel defend move') {
+    //         uiStore.dispatch({
+    //             type: 'CANCEL DEFEND'
+    //         })
+    //     }
+    //     else if(message.target === 'table stack') {
+    //         if(gameState.defendMoveCard) {
+    //             socket.send(JSON.stringify({
+    //                 action: 'MOVE DEFEND',
+    //                 card: gameState.defendMoveCard,
+    //                 i_stack: message.data
+    //             }))
+    //         }
+    //     }
+    //     else if(message.target === 'button take') {
+    //         socket.send(JSON.stringify({
+    //             action: 'MOVE TAKE'
+    //         }));
+    //     }
+    //
+    //     console.log(message); // TODO: remove at some point
+    // });
+    //
+    // window.requestAnimationFrame(function() {
+    //     handleMenuUpdate();
+    //     handleGameUpdate();
+    // });
+    //
+    // document.getElementById('find_game').onclick = function() {
+    //     socket.send(JSON.stringify({
+    //         action: 'FIND GAME'
+    //     }));
+    // };
+    //
+    // document.getElementById('cancel_find_game').onclick = function() {
+    //     socket.send(JSON.stringify({
+    //         action: 'CANCEL FIND GAME'
+    //     }));
+    // };
+    //
+    // document.getElementById('change_nickname').onclick = function() {
+    //     uiStore.dispatch({
+    //         type: 'CLICK CHANGE NICKNAME'
+    //     })
+    // };
+    //
+    // document.getElementById('nickname_submit').onclick = function() {
+    //     socket.send(JSON.stringify({
+    //         action: 'SET NICKNAME',
+    //         newNickname: document.getElementById('nickname_input').value
+    //     }))
+    // };
+    //
+    // socket.onmessage = function(event) {
+    //     var action = JSON.parse(event.data);
+    //
+    //     console.log("From socket:", action);
+    //
+    //     uiStore.dispatch(action);
+    //
+    //     console.log("Here's state after update:", JSON.stringify(uiStore.getState()));
+    // };
 
     // TODO: move timer
     // TODO: end game summary
