@@ -1,8 +1,6 @@
-/**
- * Created by frnkymac on 14/9/17.
- */
-
 'use strict';
+
+import { createStore, combineReducers } from 'redux';
 
 var cardSpritesImg = new Image();
 cardSpritesImg.src = 'img/cards.gif';
@@ -670,7 +668,7 @@ var uiStore = (function() {
         return state;
     };
 
-    var fInitializedGame = Redux.combineReducers({
+    var fInitializedGame = combineReducers({
         numPlayers: fNumPlayers,
         currentPhase: fCurrentPhase,
         currentActor: fCurrentActor,
@@ -791,7 +789,7 @@ var uiStore = (function() {
             return state;
         };
 
-        return Redux.combineReducers({
+        return combineReducers({
             displayed: fDisplayed,
             status: fStatus,
             numLooking: fNumLooking,
@@ -801,12 +799,12 @@ var uiStore = (function() {
         })
     }();
 
-    var fUiState = Redux.combineReducers({
+    var fUiState = combineReducers({
         game: fGame,
         menu: fMenu
     });
 
-    return Redux.createStore(fUiState);
+    return createStore(fUiState);
 }());
 
 var handleMenuUpdate = function() {
