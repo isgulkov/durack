@@ -10,7 +10,9 @@
   "author": "Ilya Gulkov",
   "license": "UNLICENSED",
   "dependencies": {
-    "jquery": "^3.3.1",
-    "redux": "^4.0.0"
+    "react": "^16.3.2",
+    "react-dom": "^16.3.2",
+    "react-redux": "^5.0.7",
+    "redux": "^4.0.0",
   }
 }
