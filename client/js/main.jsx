@@ -41,110 +41,17 @@ socket.onmessage = function(event) {
 };
 
 
+require('../img/cards.gif');
+
 var cardSpritesImg = new Image();
 cardSpritesImg.src = 'img/cards.gif';
 
 // All the display code
 (function() {
-    var CARD_WIDTH = 72;
-    var CARD_HEIGHT = 100;
 
-    var getCardSpriteOffset = function(card) {
-        if(card === 'back') {
-            return {
-                x: 5 * CARD_WIDTH,
-                y: 4 * CARD_HEIGHT
-            }
-        }
-        else {
-            var y = CARD_HEIGHT * ['hearts', 'diamonds', 'clubs', 'spades'].indexOf(card.suit);
-            var x = CARD_WIDTH * ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'].indexOf(card.rank);
 
-            return {
-                x: x,
-                y: y
-            }
-        }
-    };
 
-    var getOpponentHandCenters = (function() {
-        var allCenters = [
-            {x: 100, y: 325},
-            {x: 125, y: 150},
-            {x: 300, y: 75},
-            {x: 500, y: 75},
-            {x: 700, y: 75},
-            {x: 1000 - 125, y: 150},
-            {x: 1000 - 100, y: 325}
-        ];
 
-        return function(numPlayers) {
-            switch(numPlayers) {
-                case 2:
-                    return [allCenters[3]];
-                case 3:
-                    return [allCenters[1], allCenters[5]];
-                case 4:
-                    return [allCenters[0], allCenters[3], allCenters[6]];
-                case 5:
-                    return [allCenters[0], allCenters[2], allCenters[4], allCenters[6]];
-                case 6:
-                    return [allCenters[0], allCenters[1], allCenters[3], allCenters[5], allCenters[6]];
-                default:
-                    window.alert("shit");
-            }
-        };
-    }());
-
-    CanvasRenderingContext2D.prototype.drawBackground = function(numPlayers, currentPhase, currentActor) {
-        var grad = this.createLinearGradient(0, 0, 0, 600);
-
-        grad.addColorStop(0.0, '#afa');
-        grad.addColorStop(0.75, '#0c0');
-        grad.addColorStop(1.0, '#070');
-
-        this.fillStyle = grad;
-
-        // Windows Solitaire bg color
-        // this.fillStyle = '#008000';
-
-        this.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        if(currentActor !== undefined) {
-            this.save();
-
-            this.globalAlpha = 0.5;
-
-            if(currentPhase === 'init') {
-                this.globalCompositeOperation = 'overlay';
-
-                this.fillStyle = '#fffacd';
-            }
-            else if(currentPhase === 'follow') {
-                this.globalCompositeOperation = 'color';
-
-                this.fillStyle = '#ff0000';
-            }
-
-            this.beginPath();
-
-            if(currentActor === 0) {
-                this.arc(this.canvas.width / 2, this.canvas.height + 300, 500, 0, Math.PI, true);
-            }
-            else {
-                var opponentCenters = getOpponentHandCenters(numPlayers);
-
-                var center = opponentCenters[currentActor - 1];
-
-                this.arc(center.x, center.y, 100, 0, 2 * Math.PI);
-            }
-
-            this.closePath();
-            this.fill();
-
-            this.restore();
-        }
-    };
 
     CanvasRenderingContext2D.prototype.drawCard = function(card, x, y, horizontal) {
         var offset = getCardSpriteOffset(card);

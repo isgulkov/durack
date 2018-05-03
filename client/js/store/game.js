@@ -200,9 +200,10 @@ let fTimer = function(state, action) {
             interval: setInterval(function() {
                 console.log("will tick");
 
-                uiStore.dispatch({
-                    type: 'TIMER TICK'
-                });
+                // TODO: start in middleware
+                // uiStore.dispatch({
+                //     type: 'TIMER TICK'
+                // });
             }, 1000)
         }
     }
