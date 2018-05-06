@@ -91,6 +91,7 @@ class GameState:
         self.phase = 'init'
         self.spotlight = players[0][0]
 
+        # TODO: identify players by cookies rather then connection objects to support reconnect
         self.players = players  # TODO: Replace with just uids instead of tuples, put nicknames into a separate dict
         self.player_hands = player_hands
 
@@ -149,6 +150,15 @@ class GameState:
 
         players[0], players[i_start] = players[i_start], players[0]
 
+    def initialize(self):
+        for uid, name in self.players:
+            self._send_update(uid, {
+                'type': 'INITIALIZE GAME',
+                'init_state': self.as_dict_for_player(uid)
+            })
+
+        self._set_timer(10)
+
     # Utility
 
     def _index_of_player(self, player_uid):
@@ -166,6 +176,18 @@ class GameState:
         return (i_other_player - i_this_player) % len(self.players)
 
     # Mutation
+
+    def _set_timer(self, delay):
+        self.set_timer(delay)
+
+        for uid, name in self.players:
+            self._send_update(uid, {
+                'change': 'SET TIMER',
+                'numSeconds': delay
+            })
+
+    def timeout(self):
+        pass
 
     def process_move(self, player_uid, move):
         # TODO: extract methods related to moves into individual Move classes, methods related to update notifications
@@ -464,6 +486,9 @@ class GameState:
 
     # Reaction TODO: think of a better name, LOL
 
+    def add_set_timer_callback(self, callback):
+        self.set_timer = callback
+
     def add_update_handler(self, handler):  # TODO: rename them to update handlers
         self._update_handlers.add(handler)
 
@@ -529,6 +554,28 @@ class GameState:
             })
 
     # Representation
+
+    def as_dict(self):
+        return {
+            'players': self.players,
+
+            'currentPhase': self.phase,
+            'currentActor': self._index_of_player(self.spotlight),
+
+            'playerHands': [[card.as_dict() for card in hand] for hand in self.player_hands],
+
+            'tableStacks': [
+                {
+                    'top': top.as_dict(),
+                    'bottom': bottom.as_dict() if bottom is not None else None
+                } for (top, bottom) in self.table_stacks
+            ],
+
+            'leftoverDeck': self.leftover_deck,
+            'bottomCard': self.bottom_card.as_dict(),
+
+            'playedDeck': self.played_deck
+        }
 
     def as_dict_for_player(self, player_uid):
         i_player = self._index_of_player(player_uid)
