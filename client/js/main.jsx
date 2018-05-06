@@ -62,33 +62,11 @@ cardSpritesImg.src = 'img/cards.gif';
     };
 
     CanvasRenderingContext2D.prototype.drawLeftoverStack = function(stackSize, bottomCard) {
-        var additionalOffset = 2 * Math.max(0, stackSize - 15);
 
-        if(stackSize === 0) {
-            this.save();
-
-            this.globalCompositeOperation = 'darken';
-        }
-
-        this.drawCard(bottomCard, 50, 600 - CARD_HEIGHT - 25 - additionalOffset);
-
-        if(stackSize === 0) {
-            this.restore();
-        }
-
-        for(var i = stackSize - 1; i > 0; i--) {
-            this.drawCard('back', 508 + 2 * i - additionalOffset, -135, true);
-        }
     };
 
     CanvasRenderingContext2D.prototype.drawPlayedStack = function(stackSize) {
-        stackSize = Math.min(30, stackSize);
 
-        var cardSpacing = Math.min(10, 80 / stackSize);
-
-        for(var i = 0; i < stackSize; i++) {
-            this.drawCard('back', this.canvas.width - CARD_WIDTH - 5 - cardSpacing * i, this.canvas.height - CARD_HEIGHT + 10);
-        }
     };
 
     CanvasRenderingContext2D.prototype.drawButton = function(text, message, x, y, width, height, color, fontSize,
