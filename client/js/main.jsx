@@ -10,11 +10,15 @@ import { ReprGameUI } from "./components/containers/ui";
 import { fUiState } from "./store/ui";
 
 import { sendActionsMiddleware } from "./middleware/sendActions";
+import { processTimerAction } from "./middleware/processTimerAction";
 
 // TODO: rewrite in socket.io or just implement reconnection (both sides)
 let socket = new WebSocket('ws://localhost:8888/game');
 
-let uiStore = createStore(fUiState, applyMiddleware(sendActionsMiddleware(socket)));
+let uiStore = createStore(
+    fUiState,
+    applyMiddleware(sendActionsMiddleware(socket), processTimerAction)
+);
 
 uiStore.subscribe(() => console.log("state", uiStore.getState()));
 
@@ -54,73 +58,7 @@ cardSpritesImg.src = 'img/cards.gif';
     };
 
     CanvasRenderingContext2D.prototype.drawOpponentHands = function(opponentHands) {
-        var opponentHandCenters = getOpponentHandCenters(opponentHands.length + 1);
 
-        for(var i = 0; i < opponentHands.length; i++) {
-            this.save();
-
-            var center = opponentHandCenters[i];
-
-            var handSize = opponentHands[i].numCards;
-
-            if(handSize !== 0) {
-                var cardSpacing = Math.min(10, 100 / handSize);
-
-                var handWidth = cardSpacing * (handSize - 1) + CARD_WIDTH;
-
-                for(var j = handSize - 1; j >= 0; j--) {
-                    this.drawCard('back', center.x - handWidth / 2 + cardSpacing * j, center.y - CARD_HEIGHT / 2);
-                }
-            }
-            else {
-                // TODO: find a better way to display this?
-
-                this.save();
-
-                this.beginPath();
-                this.arc(center.x, center.y, 50, 0, 2 * Math.PI);
-                this.closePath();
-
-                this.globalAlpha = 0.4;
-
-                this.fillStyle = 'gray';
-                this.fill();
-
-                this.restore();
-            }
-
-            // Draw nickname
-
-            var nickname = opponentHands[i].nickname;
-
-            this.font = '16px Helvetica, sans-serif';
-            this.textAlign = 'center';
-            this.textBaseline = 'middle';
-
-            this.fillStyle = 'white';
-
-            if(!opponentHands[i].inGame) {
-                this.globalAlpha = 0.5;
-            }
-
-            var nicknameWidth = this.measureText(nickname).width;
-            this.fillRect(
-                center.x - nicknameWidth / 1.9 - 10,
-                center.y + CARD_HEIGHT / 2 + 4,
-                nicknameWidth + 20,
-                20
-            );
-
-            this.fillStyle = 'black';
-
-            this.fillText(
-                nickname,
-                center.x,
-                center.y + CARD_HEIGHT / 2 + 14
-            );
-
-            this.restore();
-        }
     };
 
     CanvasRenderingContext2D.prototype.drawLeftoverStack = function(stackSize, bottomCard) {
@@ -159,119 +97,14 @@ cardSpritesImg.src = 'img/cards.gif';
     };
 
     CanvasRenderingContext2D.prototype.drawBigButton = function(text, message) {
-        var x = (this.canvas.width - 200) / 2;
-        var y = this.canvas.height - 200;
-
-        var width = 200;
-        var height = 40;
-
-        this.drawButton(text, message, x, y, width, height);
     };
 
     CanvasRenderingContext2D.prototype.drawButtons = function(gameState) {
-        if(gameState.currentPhase === 'follow' && gameState.currentActor === 0 && gameState.tableStacks.length !== 0) {
-            this.drawBigButton("Забрать", {
-                target: 'button take'
-            });
-        }
-        else if((gameState.currentPhase === 'init' && gameState.currentActor === 0)
-            || (!gameState.optedEndMove
-                && gameState.currentPhase === 'follow' && gameState.currentActor !== 0)) {
-            var putPossible = false;
 
-            for(var i = 0; i < gameState.playerHand.length; i++) {
-                var playerCard = gameState.playerHand[i];
-
-                for(var j = 0; j < gameState.tableStacks.length; j++) {
-                    var stack = gameState.tableStacks[j];
-
-                    if(playerCard.rank === stack.top.rank) {
-                        putPossible = true;
-                        break;
-                    }
-
-                    if(stack.bottom !== null && playerCard.rank === stack.bottom.rank) {
-                        putPossible = true;
-                        break;
-                    }
-                }
-
-                if(putPossible) {
-                    break;
-                }
-            }
-
-            if(putPossible) {
-                this.drawBigButton("Закончить ход", {
-                    target: 'button end move'
-                });
-            }
-        }
     };
 
     CanvasRenderingContext2D.prototype.drawTimer = function(timer, currentPhase, currentActor) {
-        console.log(timer);
 
-        if(!timer) {
-            return;
-        }
-
-        var minutes = Math.floor(timer.numSeconds / 60);
-        var seconds = Math.floor(timer.numSeconds % 60);
-
-        var text = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-
-        this.fillStyle = 'black';
-        this.font = '32px serif';
-        this.textAlign = 'center';
-        this.textBaseline = 'middle';
-
-        this.fillText(text, this.canvas.width / 2, this.canvas.height - 225);
-    };
-
-    CanvasRenderingContext2D.prototype.displayGameState = function(gameState) {
-        this.clickAreas = [];
-
-        if(gameState !== 'no game') {
-            this.drawBackground(gameState.numPlayers, gameState.currentPhase, gameState.currentActor);
-
-            this.drawPlayersHand(gameState.playerHand, gameState.defendMoveCard);
-
-            this.drawCardsOnTable(gameState.tableStacks, gameState.defendMoveCard);
-
-            this.drawOpponentHands(gameState.opponents);
-
-            this.drawLeftoverStack(gameState.leftoverStackSize, gameState.bottomCard);
-
-            this.drawPlayedStack(gameState.playedStackSize);
-
-            this.drawButtons(gameState);
-
-            this.drawTimer(gameState.timer, gameState.currentPhase, gameState.currentActor);
-
-            // TODO: move out of this method, assign once
-
-            var ctx = this;
-
-            this.canvas.onclick = function(e) {
-                var x = e.pageX - this.offsetLeft;
-                var y = e.pageY - this.offsetTop;
-
-                for(var i = ctx.clickAreas.length - 1; i >= 0; i--) {
-                    var area = ctx.clickAreas[i];
-
-                    if(x >= area.x && y >= area.y && x <= area.x + area.w && y <= area.y + area.h) {
-                        if(ctx.clickHandlers !== undefined) {
-                            ctx.clickHandlers.forEach(function(handler) {
-                                handler(area.message);
-                            });
-                        }
-
-                        break;
-                    }
-                }
-            }
-        }
     };
 }());
 

@@ -91,6 +91,7 @@ class GameState:
         self.phase = 'init'
         self.spotlight = players[0][0]
 
+        # TODO: identify players by cookies rather then connection objects to support reconnect
         self.players = players  # TODO: Replace with just uids instead of tuples, put nicknames into a separate dict
         self.player_hands = player_hands
 

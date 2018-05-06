@@ -17,7 +17,7 @@ class Highlight extends React.Component {
             'color': (this.props.textColor || 'black'),
             'textAlign': 'center',
             'verticalAlign': 'middle',
-            'lineHeight': this.props.height,
+            'lineHeight': this.props.height + 'px',
             'padding': 0
         }
     }
@@ -29,6 +29,8 @@ class Highlight extends React.Component {
     }
 
     render() {
+        console.log("Highligh with props", this.props);
+
         return (
             <div style={this.getStyle()} onClick={() => this.handleClick()}>
                 {this.props.text || ""}

@@ -52,6 +52,20 @@ let sendActionsMiddleware = (socket) => (store => next => action => {
             });
         }
     }
+    else if(action.type === 'SEND TAKE') {
+        msg = {
+            action: 'MOVE TAKE'
+        };
+    }
+    else if(action.type === 'SEND END MOVE') {
+        msg = {
+            action: 'MOVE END'
+        };
+
+        store.dispatch({
+            type: 'OPT TO END MOVE'
+        });
+    }
 
     if(msg !== null) {
         console.log("sending", msg);

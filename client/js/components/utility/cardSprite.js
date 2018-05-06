@@ -9,7 +9,13 @@ const getCardSpriteOffset = card => {
         return {
             x: 5 * CARD_WIDTH,
             y: 4 * CARD_HEIGHT
-        }
+        };
+    }
+    else if(card === 'none') {
+        return {
+            x: 6 * CARD_WIDTH,
+            y: 4 * CARD_HEIGHT
+        };
     }
     else {
         const y = CARD_HEIGHT * ['hearts', 'diamonds', 'clubs', 'spades'].indexOf(card.suit);
