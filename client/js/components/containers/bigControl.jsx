@@ -2,7 +2,7 @@ import React from 'react';
 
 import { connect } from 'react-redux';
 
-import { BigHightlight } from "../bigHighlight";
+import { BigHighlight } from "../bigHighlight";
 
 class _BigControl extends React.Component {
     render() {
@@ -10,7 +10,7 @@ class _BigControl extends React.Component {
 
         if(gameState.currentPhase === 'follow' && gameState.currentActor === 0 && gameState.tableStacks.length !== 0) {
             return (
-                <BigHightlight totalWidth={this.props.totalWidth} totalHeight={this.props.totalHeight}
+                <BigHighlight totalWidth={this.props.totalWidth} totalHeight={this.props.totalHeight}
                                text="Забрать" onClick={() => this.props.sendTakeClick()}/>
             );
         }
@@ -30,7 +30,7 @@ class _BigControl extends React.Component {
 
             if(putPossible) {
                 return (
-                    <BigHightlight totalWidth={this.props.totalWidth} totalHeight={this.props.totalHeight}
+                    <BigHighlight totalWidth={this.props.totalWidth} totalHeight={this.props.totalHeight}
                                    text="Закончить ход" onClick={() => this.props.sendEndMove()} />
                 );
             }

@@ -2,7 +2,7 @@ import React from 'react';
 
 import { Highlight } from "./highlight";
 
-class BigHightlight extends React.Component {
+class BigHighlight extends React.Component {
     render() {
         const newProps = Object.assign({}, this.props);
 
@@ -18,4 +18,4 @@ class BigHightlight extends React.Component {
     }
 }
 
-export { BigHightlight };
+export { BigHighlight };
