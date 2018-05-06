@@ -16,6 +16,8 @@ const TABLE_HEIGHT = 600;
 
 class Game extends React.Component {
     render() {
+        // console.log("Will re-render Game with new state", this.props.state);
+
         let gameState = this.props.state;
 
         return (
@@ -26,7 +28,7 @@ class Game extends React.Component {
                          'height': TABLE_HEIGHT,
                          'padding': 0,
                          'position': 'relative',
-                         // 'overflow': 'hidden'
+                         'overflow': 'hidden'
                      }}
                 >
                     <BgCanvas numPlayers={gameState.numPlayers}

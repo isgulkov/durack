@@ -26,7 +26,9 @@ class _PlayersHand extends React.Component {
             const card = playersCards[i];
 
             cards.push(
-                <Card x={xOffset} y={yOffset} card={card} onClick={() => this.props.sendHandSelect(card)} />
+                <Card x={xOffset} y={yOffset} card={card}
+                      onClick={() => this.props.sendHandSelect(card)}
+                      key={i} />
             );
 
             const defendMoveCard = this.props.defendMoveCard;
@@ -44,9 +46,7 @@ class _PlayersHand extends React.Component {
 
         return (
             <div>
-                {
-                    cards
-                }
+                { cards }
                 { defendCardHighLight }
             </div>
         )

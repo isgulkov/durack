@@ -2,8 +2,6 @@
 let sendActionsMiddleware = (socket) => (store => next => action => {
     let msg = null;
 
-    console.log("a", action);
-
     if(action.type === 'SEND FIND GAME') {
         msg = {
             action: 'FIND GAME'

@@ -22,7 +22,8 @@ class _CardsOnTable extends React.Component {
 
         for(let i = 0; i < tableStacks.length; i++) {
             tops.push(
-                <Card x={totalLeftOffset + (stackSpacing) * i} y={topOffset} card={tableStacks[i].top} />
+                <Card x={totalLeftOffset + (stackSpacing) * i} y={topOffset} card={tableStacks[i].top}
+                      key={i} />
             );
 
             const bottomCardX = totalLeftOffset + 5 + (stackSpacing) * i;
@@ -30,7 +31,8 @@ class _CardsOnTable extends React.Component {
 
             if(tableStacks[i].bottom !== null) {
                 bottoms.push(
-                    <Card x={bottomCardX} y={bottomCardY} card={tableStacks[i].bottom} />
+                    <Card x={bottomCardX} y={bottomCardY} card={tableStacks[i].bottom}
+                          key={100 + i}/>
                 );
             }
             else if(this.props.isDefendMove) {

@@ -172,8 +172,6 @@ let fDefendMoveCard = function(state, action) {
 };
 
 let fTimer = function(state, action) {
-    console.log("fTimer", state, action);
-
     if(state === undefined) {
         return null;
     }

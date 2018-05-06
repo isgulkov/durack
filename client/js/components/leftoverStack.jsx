@@ -11,7 +11,7 @@ class LeftoverStack extends React.Component {
 
         for(let i = stackSize - 1; i > 0; i--) {
             stack.push(
-                <Card card='back' x={2 * i} y={0} />
+                <Card card='back' x={2 * i} y={0} key={i} />
             );
         }
 

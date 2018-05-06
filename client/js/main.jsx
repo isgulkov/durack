@@ -1,11 +1,9 @@
-'use strict';
-
 import { createStore, applyMiddleware } from 'redux'; // React-redux
 import React from "react";
 import ReactDOM from "react-dom";
 import { Provider } from "react-redux";
 
-import { ReprGameUI } from "./components/containers/ui";
+import { GameUI } from "./components/containers/ui";
 
 import { fUiState } from "./store/ui";
 
@@ -15,16 +13,18 @@ import { processTimerAction } from "./middleware/processTimerAction";
 // TODO: rewrite in socket.io or just implement reconnection (both sides)
 let socket = new WebSocket('ws://localhost:8888/game');
 
+document.socket = socket;
+
 let uiStore = createStore(
     fUiState,
     applyMiddleware(sendActionsMiddleware(socket), processTimerAction)
 );
 
-uiStore.subscribe(() => console.log("state", uiStore.getState()));
+// uiStore.subscribe(() => console.log("state", uiStore.getState()));
 
 ReactDOM.render(
     <Provider store={uiStore}>
-        <ReprGameUI/>
+        <GameUI/>
     </Provider>,
     document.getElementById('root')
 );
@@ -34,15 +34,22 @@ uiStore.dispatch({
     socket: socket
 });
 
-socket.onmessage = function(event) {
+socket.onmessage = (event) => {
     let action = JSON.parse(event.data);
 
     console.log("From socket:", action);
 
     uiStore.dispatch(action);
 
-    // console.log("Here's state after update:", JSON.stringify(uiStore.getState()));
+    console.log("Here's state after update:", uiStore.getState());
 };
+
+socket.onclose = (e) => {
+    console.log("SOCKET CLOSED", e);
+};
+
+// TODO: register vote for "end move" when "End move" is pressed by the init player to end init
+// TODO: deregister vote for "end move" only when new move ops arise?
 
 // TODO: move timer
 // TODO: end game summary

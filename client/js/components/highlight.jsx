@@ -29,8 +29,6 @@ class Highlight extends React.Component {
     }
 
     render() {
-        console.log("Highligh with props", this.props);
-
         return (
             <div style={this.getStyle()} onClick={() => this.handleClick()}>
                 {this.props.text || ""}

@@ -30,8 +30,6 @@ class Timer extends React.Component {
     render() {
         const timer = this.props.timer;
 
-        console.log(timer);
-
         if(!timer) {
             return null;
         }

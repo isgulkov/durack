@@ -3,7 +3,9 @@ import React from "react";
 import { getOpponentHandCenters } from "./utility/gameField";
 
 class BgCanvas extends React.Component {
-    componentDidMount() {
+    componentDidUpdate() {
+        // console.log("Will re-draw BgCanvas with new state", this.props);
+
         let canvas = this.refs.canvas;
         let ctx = canvas.getContext('2d');
 
@@ -24,6 +26,8 @@ class BgCanvas extends React.Component {
             ctx.save();
 
             ctx.globalAlpha = 0.5;
+
+            console.log(this.props.currentPhase);
 
             if(this.props.currentPhase === 'init') {
                 ctx.globalCompositeOperation = 'overlay';

@@ -52,7 +52,8 @@ class OpponentHand extends React.Component {
                 hand.push(
                     <Card x={handCenter.x - handWidth / 2 + cardSpacing * i}
                           y={handCenter.y - CARD_HEIGHT / 2}
-                          card={'back'} />
+                          card={'back'}
+                          key={i}/>
                 );
             }
         }
@@ -74,9 +75,6 @@ class OpponentHand extends React.Component {
         }
 
         // Draw nickname
-
-        console.log("oh", opponentHand);
-        console.log(hand);
 
         return (
             <div>
@@ -100,7 +98,8 @@ class OpponentHands extends React.Component {
         for(let i = 0; i < opponentHands.length; i++) {
             hands.push(
                 <OpponentHand handCenter={handCenters[i]}
-                              opponentHand={opponentHands[i]}/>
+                              opponentHand={opponentHands[i]}
+                              key={i}/>
             );
         }
 

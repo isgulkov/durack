@@ -16,7 +16,8 @@ class PlayedStack extends React.Component {
             cards.push(
                 <Card x={this.props.totalWidth - CARD_WIDTH - 5 - cardSpacing * i}
                       y={this.props.totalHeight - CARD_HEIGHT + 10}
-                      card={'back'} />
+                      card={'back'}
+                      key={i}/>
             );
         }
 

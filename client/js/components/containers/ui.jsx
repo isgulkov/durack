@@ -1,10 +1,14 @@
-import React from "react";
+import React from 'react';
 
-import { Menu } from "../components/menu";
-import { Game } from "../components/game";
+import { connect } from "react-redux";
 
-class GameUi extends React.Component {
+import { Menu } from "../menu";
+import { Game } from "../game";
+
+class _GameUi extends React.Component {
     render() {
+        // console.log("Will re-render Ui with new state", this.props.state);
+
         let currentState = this.props.state;
 
         if(currentState.game !== "no game") {
@@ -24,4 +28,10 @@ class GameUi extends React.Component {
     }
 }
 
-export { GameUi };
+export const GameUI = connect(
+    state => {
+        return {
+            state: state
+        };
+    }
+)(_GameUi);
