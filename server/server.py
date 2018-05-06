@@ -160,6 +160,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 game.process_move(self, msg)
             except IllegalMoveException as e:
                 logging.warning("Player %s issued an illegal move: %s" % (self, e.message, ))
+                logging.warning(game.as_dict())
 
     def find_game(self):
         self.matchmaking_pool.add(self)

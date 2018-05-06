@@ -555,6 +555,28 @@ class GameState:
 
     # Representation
 
+    def as_dict(self):
+        return {
+            'players': self.players,
+
+            'currentPhase': self.phase,
+            'currentActor': self._index_of_player(self.spotlight),
+
+            'playerHands': [[card.as_dict() for card in hand] for hand in self.player_hands],
+
+            'tableStacks': [
+                {
+                    'top': top.as_dict(),
+                    'bottom': bottom.as_dict() if bottom is not None else None
+                } for (top, bottom) in self.table_stacks
+            ],
+
+            'leftoverDeck': self.leftover_deck,
+            'bottomCard': self.bottom_card.as_dict(),
+
+            'playedDeck': self.played_deck
+        }
+
     def as_dict_for_player(self, player_uid):
         i_player = self._index_of_player(player_uid)
 
