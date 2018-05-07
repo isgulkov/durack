@@ -52,11 +52,6 @@ socket.onclose = (e) => {
     });
 };
 
-// TODO: register vote for "end move" when "End move" is pressed by the init player to end init
-// TODO: deregister vote for "end move" only when new move ops arise?
-
-// TODO: don't show "Take" where every stack is beaten
-
 // TODO: game end and end game summary
 
 // TODO: move timer

@@ -9,10 +9,16 @@ class _BigControl extends React.Component {
         const gameState = this.props.gameState;
 
         if(gameState.currentPhase === 'follow' && gameState.currentActor === 0 && gameState.tableStacks.length !== 0) {
-            return (
-                <BigHighlight totalWidth={this.props.totalWidth} totalHeight={this.props.totalHeight}
-                               text="Забрать" onClick={() => this.props.sendTakeClick()}/>
-            );
+            const notAllCovered = gameState.tableStacks.some(stack => {
+                return stack.bottom === null;
+            });
+
+            if(notAllCovered) {
+                return (
+                    <BigHighlight totalWidth={this.props.totalWidth} totalHeight={this.props.totalHeight}
+                                  text="Забрать" onClick={() => this.props.sendTakeClick()}/>
+                );
+            }
         }
         else if((gameState.currentPhase === 'init' && gameState.currentActor === 0) ||
             (!gameState.optedEndMove && gameState.currentPhase === 'follow' && gameState.currentActor !== 0)) {

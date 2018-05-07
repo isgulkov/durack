@@ -104,7 +104,9 @@ class GameState:
 
         self.bottom_card = bottom_card
 
-        self.end_move_votes = [False for _ in players]  # TODO: strictly define when reset
+        # TODO: strictly define when reset
+        # TODO: for example, only if a new follow opportunity arises for a particular player
+        self.end_move_votes = [False for _ in players]
 
         self._update_handlers = set()
 
