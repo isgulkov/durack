@@ -161,9 +161,13 @@ class GameState:
 
         self._set_timer(10)
 
-    # Utility
+    # Information about state
 
     def _index_of_player(self, player_uid):
+        '''
+        Get index of the specified player on the playing field
+        '''
+
         # TODO; do something about all these indices (put in hash table ?)
         for i, (uid, name) in enumerate(self.players):
             if uid == player_uid:
@@ -172,12 +176,139 @@ class GameState:
             raise ValueError("No player with uid `%s` in the game" % player_uid)
 
     def _relative_index_of_other_player(self, this_player, other_player):
+        '''
+        Get index of `other_player` on `this_player`'s playing field view
+        '''
+
         i_this_player = self._index_of_player(this_player)
         i_other_player = self._index_of_player(other_player)
 
         return (i_other_player - i_this_player) % len(self.players)
 
-    # Mutation
+    def _get_table_cards(self):
+        '''
+        Get all cards currently on the table (in no particular order)
+        '''
+
+        for stack in self.table_stacks:
+            yield stack['top']
+
+            if stack['bottom'] is not None:
+                yield stack['bottom']
+
+    def _get_num_empty_stacks(self):
+        '''
+        Get the number of stacks currently on the table that aren't covered (have no 'bottom' card)
+        '''
+
+        return sum(1 for stack in self.table_stacks if stack['bottom'] is None)
+
+    def _get_next_player(self):
+        '''
+        Get the uid of the next player in order to take `spotlight`
+        '''
+
+        # TODO: skip out of game players!
+        # TODO: use this where needed
+        return self.players[(self._index_of_player(self.spotlight) + 1) % len(self.players)][0]
+
+    def _get_defending_player(self):
+        '''
+        Get the uid of the player against whom the moves are made
+        '''
+
+        if self.phase == 'follow':
+            return self.spotlight
+        elif self.phase == 'init':
+            return self._get_next_player()
+        else:
+            raise ValueError("Illegal `phase` value")
+
+    # Predicates on state
+
+    def _is_valid_put_move(self, player_uid, card):
+        '''
+        Return if `card` being put by the specified player is a valid put move.
+
+        The decision process is as follows.
+
+        1. Decline if either:
+           - phase is 'init' and spotlight isn't the player, or
+           - phase is 'follow' and spotlight is on the player;
+           - player doesn't have `card` in his hand.
+        2. Accept if there are no stacks on the table.
+        3. Decline if there are already as many uncovered stacks on the table as the defending player has cards.
+        4. Accept if there are cards on table of the same rank as `card`.
+        5. Decline otherwise.
+        '''
+
+        if (self.phase == 'init' and self.spotlight != player_uid) \
+                or (self.phase == 'follow' and self.spotlight == player_uid):
+            return False
+
+        if not any(uid == player_uid for uid, _ in self.players):
+            return False
+
+        if card not in self.player_hands[player_uid]:
+            return False
+
+        if len(self.table_stacks) == 0:
+            return True
+
+        num_empty_stacks = self._get_num_empty_stacks()
+
+        if num_empty_stacks == len(self.player_hands[self._get_defending_player()]):
+            return False
+
+        for table_card in self._get_table_cards():
+            if table_card.rank == card.rank:
+                return True
+
+        return False
+
+    def _put_possible(self, player_uid):
+        # TODO: refactor this check
+
+        for card in self.player_hands[player_uid]:
+            if self._is_valid_put_move(player_uid, card):
+                return True
+
+        return False
+
+    def _is_valid_defend_move(self, player_uid, card, i_stack):
+        if self.phase != 'follow' or self.spotlight != player_uid:
+            return False
+
+        if card not in self.player_hands[player_uid]:
+            return False
+
+        if not (0 <= i_stack < len(self.table_stacks)):
+            return False
+
+        top = self.table_stacks[i_stack]['top']
+        bottom = self.table_stacks[i_stack]['bottom']
+
+        if bottom is not None:
+            return False
+
+        if card.suit == top.suit and card.rank_value > top.rank_value:
+            return True
+
+        if card.suit == self.bottom_card.suit and top.suit != self.bottom_card.suit:
+            return True
+
+        return False
+
+    def _is_valid_take_move(self, player_uid):
+        if self.phase != 'follow' or self.spotlight != player_uid:
+            return False
+
+        if len(self.table_stacks) == 0:
+            return False
+
+        return True
+
+    # Mutation of state
 
     def _set_timer(self, delay):
         self.set_timer(delay)
@@ -189,7 +320,7 @@ class GameState:
             })
 
     def timeout(self):
-        pass
+        pass # TODO: implement timeout actions
 
     def _opt_end_move(self, i_player):
         if not self.end_move_votes[i_player]:
@@ -231,35 +362,6 @@ class GameState:
         else:
             raise ValueError("Unknown type of move `%s`" % move['action'])
 
-    def _is_valid_put_move(self, player_uid, card):
-        if (self.phase == 'init' and self.spotlight != player_uid) \
-                or (self.phase == 'follow' and self.spotlight == player_uid):
-            return False
-
-        if not any(uid == player_uid for uid, _ in self.players):
-            return False
-
-        if card not in self.player_hands[player_uid]:
-            return False
-
-        if len(self.table_stacks) == 0:
-            return True
-
-        num_empty_stacks = len([stack for stack in self.table_stacks if stack['bottom'] is None])
-
-        if self.phase == 'follow' and num_empty_stacks == len(self.player_hands[self.spotlight]):
-            return False
-
-        next_player = self.players[(self._index_of_player(self.spotlight) + 1) % len(self.players)][0]
-
-        if self.phase == 'init' and num_empty_stacks == len(self.player_hands[next_player]):
-            return False
-
-        if any(c[1] is not None and c[1].rank == card.rank for stack in self.table_stacks for c in stack.iteritems()):
-            return True
-
-        return False
-
     def _apply_put_move(self, player_uid, card):
         """
         Apply to the current state an init move (to put the specified card on the table) by the specified player
@@ -289,15 +391,6 @@ class GameState:
         self.end_move_votes = [False for _ in self.players]
 
         return True
-
-    def _put_possible(self, player_uid):
-        # TODO: refactor this check
-
-        for card in self.player_hands[player_uid]:
-            if self._is_valid_put_move(player_uid, card):
-                return True
-
-        return False
 
     def _end_init_phase(self):
         if self.phase != 'init':
@@ -329,30 +422,6 @@ class GameState:
                 'change': 'SPOTLIGHT',
                 'i_spotlight': self._relative_index_of_other_player(uid, self.spotlight)
             })
-
-    def _is_valid_defend_move(self, player_uid, card, i_stack):
-        if self.phase != 'follow' or self.spotlight != player_uid:
-            return False
-
-        if card not in self.player_hands[player_uid]:
-            return False
-
-        if not (0 <= i_stack < len(self.table_stacks)):
-            return False
-
-        top = self.table_stacks[i_stack]['top']
-        bottom = self.table_stacks[i_stack]['bottom']
-
-        if bottom is not None:
-            return False
-
-        if card.suit == top.suit and card.rank_value > top.rank_value:
-            return True
-
-        if card.suit == self.bottom_card.suit and top.suit != self.bottom_card.suit:
-            return True
-
-        return False
 
     def _apply_defend_move(self, player_uid, card, i_stack):
         if not self._is_valid_defend_move(player_uid, card, i_stack):
@@ -429,22 +498,6 @@ class GameState:
         logging.info(self.leftover_deck)
 
         self._send_remove_from_deck(sum(len(cs) for cs in additional_cards))
-
-    def _get_table_cards(self):
-        for stack in self.table_stacks:
-            yield stack['top']
-
-            if stack['bottom'] is not None:
-                yield stack['bottom']
-
-    def _is_valid_take_move(self, player_uid):
-        if self.phase != 'follow' or self.spotlight != player_uid:
-            return False
-
-        if len(self.table_stacks) == 0:
-            return False
-
-        return True
 
     def _apply_take_move(self, player_uid):
         if not self._is_valid_take_move(player_uid):
