@@ -8,7 +8,7 @@ class _BigControl extends React.Component {
     render() {
         const gameState = this.props.gameState;
 
-        if(gameState.currentPhase === 'follow' && gameState.currentActor === 0 && gameState.tableStacks.length !== 0) {
+        if(gameState.currentPhase === 'follow' && gameState.iSpotlight === 0 && gameState.tableStacks.length !== 0) {
             const notAllCovered = gameState.tableStacks.some(stack => {
                 return stack.bottom === null;
             });
@@ -20,8 +20,8 @@ class _BigControl extends React.Component {
                 );
             }
         }
-        else if((gameState.currentPhase === 'init' && gameState.currentActor === 0) ||
-            (!gameState.optedEndMove && gameState.currentPhase === 'follow' && gameState.currentActor !== 0)) {
+        else if((gameState.currentPhase === 'init' && gameState.iSpotlight === 0) ||
+            (!gameState.optedEndMove && gameState.currentPhase === 'follow' && gameState.iSpotlight !== 0)) {
             const putPossible = gameState.playerHand.some(playerCard => {
                 return gameState.tableStacks.some(stack => {
                     if(playerCard.rank === stack.top.rank) {

@@ -3,19 +3,19 @@ import React from 'react';
 import {CARD_HEIGHT, CARD_WIDTH} from "./utility/cardSprite";
 import { Card } from "./card";
 
-class LeftoverStack extends React.Component {
+class LeftoverDeck extends React.Component {
     render() {
-        const stackSize = this.props.stackSize;
+        const deckSize = this.props.deckSize;
 
-        let stack = [];
+        let deck = [];
 
-        for(let i = stackSize - 1; i > 0; i--) {
-            stack.push(
+        for(let i = deckSize - 1; i > 0; i--) {
+            deck.push(
                 <Card card='back' x={2 * i} y={0} key={i} />
             );
         }
 
-        const totalWidth = CARD_WIDTH + 2 * (stackSize - 1);
+        const totalWidth = CARD_WIDTH + 2 * (deckSize - 1);
 
         const offsetAfterRotate = (totalWidth - CARD_HEIGHT) / 2;
 
@@ -28,10 +28,10 @@ class LeftoverStack extends React.Component {
                 'left': -offsetAfterRotate + 50 - (CARD_HEIGHT - CARD_WIDTH) / 2,
                 'transform': 'rotate(90deg)'
             }}>
-                {stack}
+                {deck}
             </div>
         )
     }
 }
 
-export { LeftoverStack };
+export { LeftoverDeck };

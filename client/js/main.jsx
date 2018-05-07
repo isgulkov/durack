@@ -54,7 +54,7 @@ uiStore.dispatch({
 
 // TODO: render server address into index.html ?
 
-// TODO: naming: stack -> deck in state keys, camelcase in network dict keys, spotlight/actor, etc
+// TODO: naming: camelcase in network dict keys, spotlight/actor, etc
 // TODO: a non-random nomenclature of actions, state deltas, moves and ui clicks
 
 // TODO: leave game from in-game menu

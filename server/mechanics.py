@@ -119,8 +119,7 @@ class GameState:
 
         self.end_summary = None
 
-        # TODO: identify players by cookies rather then connection objects to support reconnect
-        self.players = players  # TODO: Replace with just uids instead of tuples, put nicknames into a separate dict
+        self.players = players
         self.player_hands = player_hands
 
         self.in_game = {uid: True for uid, name in self.players}
@@ -336,7 +335,6 @@ class GameState:
         Get index of the specified player on the playing field.
         """
 
-        # TODO; do something about all these indices (put in hash table ?)
         for i, (uid, name) in enumerate(self.players):
             if uid == player_uid:
                 return i
@@ -629,7 +627,7 @@ class GameState:
             card = Card.from_dict(move['card'])
 
             if not self._is_valid_put_move(player_uid, card):
-                raise IllegalMoveException(move, self.as_dict())  # TODO: add details
+                raise IllegalMoveException(move, self.as_dict())
 
             self._apply_put_move(player_uid, card)
         elif move['action'] == 'MOVE DEFEND':
@@ -637,12 +635,12 @@ class GameState:
             i_stack = move['iStack']
 
             if not self._is_valid_defend_move(player_uid, card, i_stack):
-                raise IllegalMoveException(move, self.as_dict())  # TODO: add details
+                raise IllegalMoveException(move, self.as_dict())
 
             self._apply_defend_move(player_uid, card, i_stack)
         elif move['action'] == 'MOVE TAKE':
             if not self._is_valid_take_move(player_uid):
-                raise IllegalMoveException(move, self.as_dict())  # TODO: add details
+                raise IllegalMoveException(move, self.as_dict())
 
             self._apply_take_move(player_uid)
         elif move['action'] == 'MOVE END':
@@ -1093,7 +1091,7 @@ class GameState:
             'players': self.players,
 
             'currentPhase': self.phase,
-            'currentActor': self._index_of_player(self.spotlight),
+            'iSpotlight': self._index_of_player(self.spotlight),
 
             'playerHands': {uid: [card.as_dict() for card in hand] for uid, hand in self.player_hands.iteritems()},
 
@@ -1119,9 +1117,7 @@ class GameState:
             'numPlayers': len(self.players),
 
             'currentPhase': self.phase,
-            'currentActor': (self._index_of_player(self.spotlight) - i_player) % len(self.players),
-            # TODO: ^^^^^         ^^^^^^^^^
-            # TODO: make terminology the same?
+            'iSpotlight': (self._index_of_player(self.spotlight) - i_player) % len(self.players),
 
             'playerHand': [card.as_dict() for card in self.player_hands[player_uid]],
 
@@ -1140,12 +1136,10 @@ class GameState:
                 } for (uid, name) in shifted_opponents
             ],
 
-            # TODO:  vvvvv                         vvvv
-            'leftoverStackSize': len(self.leftover_deck),
+            'leftoverDeckSize': len(self.leftover_deck),
             'bottomCard': self.bottom_card.as_dict(),
 
-            'playedStackSize': len(self.played_deck),
-            # TODO:^^^^^                       ^^^^
+            'playedDeckSize': len(self.played_deck),
 
             'playersDisconnected': {
                 self._relative_index_of_other_player(player_uid, uid):

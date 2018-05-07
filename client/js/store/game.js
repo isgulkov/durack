@@ -12,7 +12,7 @@ const fCurrentPhase = (state=null, action) => {
     return state;
 };
 
-const fCurrentActor = (state=null, action) => {
+const fISpotlight = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'SPOTLIGHT') {
         console.log("new spotlight", action.iSpotlight);
 
@@ -100,7 +100,7 @@ const fOpponents = (state=null, action) => {
     return state;
 };
 
-const fLeftoverStackSize = (state=null, action) => {
+const fLeftoverDeckSize = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'REMOVE FROM DECK') {
         return state - action.numCards;
     }
@@ -116,7 +116,7 @@ let fBottomCard = function(state, action) {
 };
 
 
-const fPlayedStackSize = (state=null, action) => {
+const fPlayedDeckSize = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'ADD TO PLAYED DECK') {
         return state + action.numCards;
     }
@@ -222,13 +222,13 @@ const fHasEnded = (state=false, action) => {
 let fInitializedGame = combineReducers({
     numPlayers: fNumPlayers,
     currentPhase: fCurrentPhase,
-    currentActor: fCurrentActor,
+    iSpotlight: fISpotlight,
     playerHand: fPlayerHand,
     tableStacks: fTableStacks,
     opponents: fOpponents,
-    leftoverStackSize: fLeftoverStackSize,
+    leftoverDeckSize: fLeftoverDeckSize,
     bottomCard: fBottomCard,
-    playedStackSize: fPlayedStackSize,
+    playedDeckSize: fPlayedDeckSize,
     defendMoveCard: fDefendMoveCard,
     timer: fTimer,
     optedEndMove: fOptedEndMove,

@@ -5,11 +5,11 @@ import { Card } from "./card";
 
 class BottomCard extends React.Component {
     render() {
-        const stackSize = this.props.stackSize;
+        const deckSize = this.props.deckSize;
 
-        const additionalOffset = 2 * Math.max(15, stackSize);
+        const additionalOffset = 2 * Math.max(15, deckSize);
 
-        if(stackSize !== 0) {
+        if(deckSize !== 0) {
             return (
                 <Card card={this.props.bottomCard}
                       x={50}

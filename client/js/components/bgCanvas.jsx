@@ -20,7 +20,7 @@ class BgCanvas extends React.Component {
 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        if(this.props.currentActor !== null) {
+        if(this.props.iSpotlight !== null) {
             ctx.save();
 
             ctx.globalAlpha = 0.5;
@@ -38,12 +38,12 @@ class BgCanvas extends React.Component {
 
             ctx.beginPath();
 
-            if(this.props.currentActor === 0) {
+            if(this.props.iSpotlight === 0) {
                 ctx.arc(canvas.width / 2, canvas.height + 300, 500, 0, Math.PI, true);
             }
             else {
                 let opponentCenters = getOpponentHandCenters(this.props.numPlayers);
-                let center = opponentCenters[this.props.currentActor - 1];
+                let center = opponentCenters[this.props.iSpotlight - 1];
 
                 ctx.arc(center.x, center.y, 100, 0, 2 * Math.PI);
             }

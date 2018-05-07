@@ -7,8 +7,8 @@ import { OpponentHands } from "./opponentHands";
 import { BigControl } from "./containers/bigControl";
 import { Timer } from "./timer";
 import { BottomCard } from "./bottomCard";
-import { LeftoverStack } from "./leftoverStack";
-import { PlayedStack } from "./playedStack";
+import { LeftoverDeck } from "./leftoverDeck";
+import { PlayedDeck } from "./playedDeck";
 import { PlayersDisconnected } from "./playersDisconnected";
 
 const TABLE_WIDTH = 1000;
@@ -41,7 +41,7 @@ class Game extends React.Component {
                 >
                     <BgCanvas numPlayers={gameState.numPlayers}
                               currentPhase={gameState.hasEnded ? null : gameState.currentPhase}
-                              currentActor={gameState.currentActor}
+                              iSpotlight={gameState.iSpotlight}
                               totalWidth={TABLE_WIDTH}
                               totalHeight={TABLE_HEIGHT}>
                     </BgCanvas>
@@ -69,18 +69,18 @@ class Game extends React.Component {
                                 totalHeight={TABLE_HEIGHT} />
 
                     <Timer timer={gameState.timer}
-                           currentPhase={gameState.currentPhase} currentActor={gameState.currentActor}
+                           currentPhase={gameState.currentPhase} iSpotlight={gameState.iSpotlight}
                            totalWidth={TABLE_WIDTH}
                            totalHeight={TABLE_HEIGHT} />
 
                     <BottomCard bottomCard={gameState.bottomCard}
-                                stackSize={gameState.leftoverStackSize}
+                                deckSize={gameState.leftoverDeckSize}
                                 totalHeight={TABLE_HEIGHT} />
-                    <LeftoverStack stackSize={gameState.leftoverStackSize} />
+                    <LeftoverDeck deckSize={gameState.leftoverDeckSize} />
 
-                    <PlayedStack stackSize={gameState.playedStackSize}
-                                 totalWidth={TABLE_WIDTH}
-                                 totalHeight={TABLE_HEIGHT} />
+                    <PlayedDeck deckSize={gameState.playedDeckSize}
+                                totalWidth={TABLE_WIDTH}
+                                totalHeight={TABLE_HEIGHT} />
 
                     {
                         gameState.hasEnded ? null

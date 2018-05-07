@@ -21,7 +21,7 @@ let sendActionsMiddleware = store => next => action => {
     else if(action.type === 'SEND HAND SELECT') {
         const gameState = store.getState().game;
 
-        if(gameState.currentPhase === 'follow' && gameState.currentActor === 0) {
+        if(gameState.currentPhase === 'follow' && gameState.iSpotlight === 0) {
             store.dispatch({
                 type: 'DEFEND CLICK',
                 card: action.card
