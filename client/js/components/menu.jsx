@@ -16,7 +16,7 @@ class FindGameBlock extends React.Component {
         else {
             return (
                 <div id="message_looking_for_game">
-                    <p> { /* TODO: put into a subobject vvv */ }
+                    <p>
                         Идет поиск игры ({this.props.numLooking})...
                     </p>
                     <p>
@@ -50,7 +50,7 @@ class Menu extends React.Component {
     render() {
         let menuState = this.props.state;
 
-        if(!menuState.displayed) { // TODO: rename to isDisplayed
+        if(!menuState.isDisplayed) {
             return null;
         }
 

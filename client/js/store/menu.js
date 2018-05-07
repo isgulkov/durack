@@ -1,6 +1,6 @@
 import { combineReducers } from "redux";
 
-const fDisplayed = (state=true, action) => {
+const fIsDisplayed = (state=true, action) => {
     if(action.type === 'INITIALIZE GAME') {
         return false;
     }
@@ -73,7 +73,7 @@ const fEndSummary = (state=null, action) => {
 };
 
 export const fMenu = combineReducers({
-    displayed: fDisplayed,
+    isDisplayed: fIsDisplayed,
     status: fStatus,
     numLooking: fNumLooking,
     currentNickname: fCurrentNickname,

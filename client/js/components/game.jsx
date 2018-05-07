@@ -69,7 +69,6 @@ class Game extends React.Component {
                                 totalHeight={TABLE_HEIGHT} />
 
                     <Timer timer={gameState.timer}
-                           // TODO: use these to draw timer in different places ?
                            currentPhase={gameState.currentPhase} currentActor={gameState.currentActor}
                            totalWidth={TABLE_WIDTH}
                            totalHeight={TABLE_HEIGHT} />
