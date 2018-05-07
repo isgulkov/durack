@@ -484,10 +484,21 @@ class GameState:
             self._advance_spotlight()
 
     def _end_game(self):
+        loser_uid = None
+        loser_nickname = None
+
+        for uid, name in self.players:
+            if self.in_game[uid]:
+                loser_uid, loser_nickname = uid, name
+                break
+        else:
+            raise ValueError("No players left `in_game` at the end of the game")
+
         for uid, name in self.players:
             self._send_update(uid, {
                 'change': 'GAME ENDED',
-                'results': [name for uid, name in self.players]
+                'loserNickname': loser_nickname,
+                'loserIsYou': loser_uid == uid
             })
 
     def _handle_players_finishing(self):

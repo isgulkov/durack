@@ -2,6 +2,7 @@ import React from "react";
 
 import { FindGameBtn, StopLookingBtn } from './containers/findGameButtons';
 import { ChangeNameBlock } from './containers/changeNameBlock';
+import { EndGameBlock } from "./containers/endGameBlock";
 
 class FindGameBlock extends React.Component {
     render() {
@@ -53,23 +54,38 @@ class Menu extends React.Component {
             return null;
         }
 
+        let findGameBlock = null;
+
+        if(menuState.status === 'initial' || menuState.status === 'looking') {
+            findGameBlock = (
+                <FindGameBlock isLooking={menuState.status === 'looking'}
+                               numLooking={menuState.numLooking} />
+            );
+        }
+
+        let changeNameBlock = null;
+
+        if(menuState.status === 'initial') {
+            changeNameBlock = (
+                <ChangeNameBlock isChangingNickname={menuState.changingNickname}
+                                 nickname={menuState.currentNickname} />
+            );
+        }
+
+        let endGameBlock = null;
+
+        if(menuState.status === 'game end') {
+            endGameBlock = (
+                <EndGameBlock endSummary={menuState.endSummary} />
+            );
+        }
+
         return (
             <div style={Menu.getContainerStyle()}>
                 <div style={Menu.getMenuStyle()}>
-                    { // TODO: switch/if
-                        menuState.status === "initial" || menuState.status === "looking"
-                            ? <FindGameBlock isLooking={menuState.status === "looking"}
-                                             numLooking={menuState.numLooking} />
-                            : null
-                    }
-                    {
-                        // TODO: Switch to ' in "symbols" everywhere
-                        // TODO: rework the state tree field names into something more sensible (after everything is done)
-                        menuState.status !== 'looking'
-                            ? <ChangeNameBlock isChangingNickname={menuState.changingNickname}
-                                               nickname={menuState.currentNickname} />
-                            : null
-                    }
+                    { findGameBlock }
+                    { changeNameBlock }
+                    { endGameBlock }
                 </div>
             </div>
         );

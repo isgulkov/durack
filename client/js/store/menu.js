@@ -32,6 +32,9 @@ let fStatus = function(state, action) {
     else if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
         return 'game end';
     }
+    else if(action.type === 'CLICK FINISH GAME') {
+        return 'initial';
+    }
 
     return state;
 };
@@ -60,21 +63,6 @@ let fCurrentNickname = function(state, action) {
     return state;
 };
 
-// let fNicknamePrompt = function(state, action) {
-//     if(state === undefined) {
-//         return "";
-//     }
-//
-//     if(action.type === 'CLICK CHANGE NICKNAME' && state === "") {
-//         return uiStore.getState().menu.currentNickname;
-//     }
-//     else if(action.type === 'CONFIRM SET NICKNAME') {
-//         return "";
-//     }
-//
-//     return state;
-// };
-
 let fChangingNickname = function(state, action) {
     if(state === undefined) {
         return false;
@@ -90,13 +78,31 @@ let fChangingNickname = function(state, action) {
     return state;
 };
 
+let fEndSummary = function(state, action) {
+    if(state === undefined) {
+        return null;
+    }
+
+    if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
+        return {
+            'loserNickname': action.loserNickname,
+            'isLoser': action.loserIsYou
+        }
+    }
+    else if(action.type === 'CLICK FINISH GAME') {
+        return null;
+    }
+
+    return state;
+};
+
 let fMenu = combineReducers({
     displayed: fDisplayed,
     status: fStatus,
     numLooking: fNumLooking,
     currentNickname: fCurrentNickname,
-    // nicknamePrompt: fNicknamePrompt,
-    changingNickname: fChangingNickname
+    changingNickname: fChangingNickname,
+    endSummary: fEndSummary
 });
 
 export { fMenu };

@@ -52,11 +52,15 @@ socket.onclose = (e) => {
     });
 };
 
-// TODO: game end and end game summary
+// TODO: draw empty leftover properly
 
-// TODO: move timer
+// TODO: move timer out of state and make middleware manage it (?)
+// TODO: implement move timer
 
 // TODO: RECONNECTION and session persistence!
+
+// TODO: Switch to ' in "symbols" and module names everywhere
+// TODO: rework the state tree field names into something more sensible (after everything is done)
 
 // TODO: persistent data about players by cookie
 // TODO: persistent data about players between server restarts (a db)

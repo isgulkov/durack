@@ -242,6 +242,9 @@ let fGame = function(state, action) {
     if(action.type === 'INITIALIZE GAME') {
         return fGame(action.init_state, {type: NaN});
     }
+    else if(action.type === 'CLICK FINISH GAME') {
+        return 'no game';
+    }
     else if(state !== 'no game') {
         return fInitializedGame(state, action);
     }
