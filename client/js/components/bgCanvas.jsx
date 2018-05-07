@@ -4,7 +4,7 @@ import { getOpponentHandCenters } from "./utility/gameField";
 
 class BgCanvas extends React.Component {
     drawContents() {
-        let canvas = this.refs.canvas;
+        let canvas = this.canvasRef.current;
         let ctx = canvas.getContext('2d');
 
         let grad = ctx.createLinearGradient(0, 0, 0, 600);
@@ -63,9 +63,17 @@ class BgCanvas extends React.Component {
         this.drawContents();
     }
 
+    constructor(props) {
+        super(props);
+
+        this.canvasRef = React.createRef();
+    }
+
     render() {
         return (
-            <canvas ref="canvas" width="1000" height="600" />
+            <canvas ref={this.canvasRef}
+                    width={this.props.totalWidth}
+                    height={this.props.totalHeight} />
         );
     }
 }

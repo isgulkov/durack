@@ -11,7 +11,6 @@ import { LeftoverStack } from "./leftoverStack";
 import { PlayedStack } from "./playedStack";
 import { PlayersDisconnected } from "./playersDisconnected";
 
-// TODO: propagate these to BgCanvas
 const TABLE_WIDTH = 1000;
 const TABLE_HEIGHT = 600;
 
@@ -42,20 +41,22 @@ class Game extends React.Component {
                 >
                     <BgCanvas numPlayers={gameState.numPlayers}
                               currentPhase={gameState.hasEnded ? null : gameState.currentPhase}
-                              currentActor={gameState.currentActor}>
+                              currentActor={gameState.currentActor}
+                              totalWidth={TABLE_WIDTH}
+                              totalHeight={TABLE_HEIGHT}>
                     </BgCanvas>
 
                     {/*
-                    TODO: remove the need in passing totalHeight and totalWidth to children by making components
+                    TODO: remove the need in passing totalHeight and totalWidth to children by making cards
                     TODO: placeable against top, right, bottom and left,
                     TODO: and also somehow against center of the container?
                      */}
 
                     <PlayersHand playersCards={gameState.playerHand}
-                                 totalWidth={TABLE_WIDTH}
-                                 totalHeight={TABLE_HEIGHT}
                                  // TODO: rename to `selectedDefendCard` or something
-                                 defendMoveCard={gameState.defendMoveCard} />
+                                 defendMoveCard={gameState.defendMoveCard}
+                                 totalWidth={TABLE_WIDTH}
+                                 totalHeight={TABLE_HEIGHT} />
 
                     <CardsOnTable tableStacks={gameState.tableStacks}
                                   isDefendMove={gameState.defendMoveCard !== null}

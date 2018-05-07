@@ -41,6 +41,9 @@ uiStore.dispatch({
 
 // TODO: a more interesting summary
 
+// TODO: initialize state right on open
+// TODO: for when after a server that he had an large state with, the client reconnects to a server that first sees him
+
 // TODO: graphically show when the player is out of game himself
 
 // TODO: Switch to ' in "symbols" and module names everywhere
@@ -53,6 +56,8 @@ uiStore.dispatch({
 
 // TODO: naming: stack -> deck in state keys, camelcase in network dict keys, spotlight/actor, etc
 // TODO: a non-random nomenclature of actions, state deltas, moves and ui clicks
+
+// TODO: leave game from in-game menu
 
 // TODO: reconnect in menu
 // TODO: persist game state across sessions
