@@ -376,9 +376,16 @@ class GameState:
         Get the uid of the next player in order to take `spotlight`.
         """
 
-        # TODO: skip out of game players!
-        # TODO: use this where needed
-        return self.players[(self._index_of_player(self.spotlight) + 1) % len(self.players)][0]
+        i_next_player = self._index_of_player(self.spotlight) + 1
+        i_next_player %= len(self.players)
+
+        while not self.in_game[self.players[i_next_player][0]]:
+            # Skip out of game players
+
+            i_next_player += 1
+            i_next_player %= len(self.players)
+
+        return self.players[i_next_player][0]
 
     def _get_defending_player(self):
         """
@@ -821,6 +828,8 @@ class GameState:
         # Only one player left in the game -- announce game end
         if self._game_will_end():
             self._end_the_game()
+
+            return
 
         # Advance spotlight only if the former defending player went out of game, otherwise it's his turn now
         if not self.in_game[self.spotlight]:
