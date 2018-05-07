@@ -13,14 +13,19 @@ class BottomCard extends React.Component {
             return (
                 <Card card={this.props.bottomCard}
                       x={50}
-                      y={this.props.totalHeight - CARD_HEIGHT - additionalOffset}/>
+                      y={this.props.totalHeight - CARD_HEIGHT - additionalOffset} />
             );
         }
         else {
             return (
-                <Card card={this.props.bottomCard} // TODO: blending
+                <Card card={this.props.bottomCard}
                       x={50}
-                      y={this.props.totalHeight - CARD_HEIGHT - additionalOffset}/>
+                      y={this.props.totalHeight - CARD_HEIGHT - additionalOffset}
+                      style={{
+                          'opacity': 0.6,
+                          'mixBlendMode': 'darken',
+                          'backgroundBlendMode': 'darken'
+                      }} />
             );
         }
     }

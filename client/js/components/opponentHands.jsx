@@ -70,7 +70,7 @@ class OpponentHand extends React.Component {
                     'height': 50,
 
                     'background': 'rgba(127, 127, 127, 0.3)'
-                }}/>
+                }} key={1337} />
             )
         }
 

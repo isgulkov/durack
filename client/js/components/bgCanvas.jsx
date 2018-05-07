@@ -27,8 +27,6 @@ class BgCanvas extends React.Component {
 
             ctx.globalAlpha = 0.5;
 
-            console.log(this.props.currentPhase);
-
             if(this.props.currentPhase === 'init') {
                 ctx.globalCompositeOperation = 'overlay';
 

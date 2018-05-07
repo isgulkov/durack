@@ -573,7 +573,7 @@ class GameState:
         for uid, name in self.players:
             self._send_update(uid, {
                 'change': 'PLAYER OUT OF GAME',
-                'i_opponent': self._relative_index_of_other_player(uid, player_uid) - 1
+                'iPlayer': self._relative_index_of_other_player(uid, player_uid)
             })
 
     # Representation

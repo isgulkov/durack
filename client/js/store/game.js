@@ -110,10 +110,10 @@ let fOpponents = function(state, action) {
 
             return increasedState;
         }
-        else if(action.change === 'PLAYER OUT OF GAME') {
+        else if(action.change === 'PLAYER OUT OF GAME' && action.iPlayer !== 0) {
             var outedState = state.slice(0); // TODO: these variable names...
 
-            outedState[action.i_opponent].inGame = false;
+            outedState[action.iPlayer - 1].inGame = false;
 
             return outedState;
         }

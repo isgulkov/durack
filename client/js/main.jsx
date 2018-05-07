@@ -53,6 +53,9 @@ socket.onclose = (e) => {
 };
 
 // TODO: draw empty leftover properly
+// TODO: graphically show when the player is out of game
+
+// TODO: auto end move when opponent has no cards left
 
 // TODO: move timer out of state and make middleware manage it (?)
 // TODO: implement move timer

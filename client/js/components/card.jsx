@@ -4,9 +4,11 @@ import { CARD_WIDTH, CARD_HEIGHT, cardSpriteUrl, getCardSpriteOffset } from "./u
 
 class Card extends React.Component {
     getStyle() {
+        let style = this.props.style !== undefined ? this.props.style : {};
+
         const spriteOffset = getCardSpriteOffset(this.props.card);
 
-        const s = {
+        Object.assign(style, {
             'width': CARD_WIDTH,
             'height': CARD_HEIGHT,
 
@@ -16,9 +18,9 @@ class Card extends React.Component {
 
             'background': 'url(' + cardSpriteUrl + ') ' + (-spriteOffset.x) + 'px ' + (-spriteOffset.y) + 'px',
             'backgroundRepeat': 'no-repeat'
-        };
+        });
 
-        return s;
+        return style;
     }
 
     render() {
