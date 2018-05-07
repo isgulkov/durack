@@ -45,6 +45,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     game_states = {}
     timers = {}
+    timer_deadlines = {}
 
     MIN_NUM_PLAYERS = 2 # TODO: Apply some logic to it
 
@@ -83,31 +84,39 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 raise e
 
         new_state.add_update_handler(send_state_update)
-        new_state.add_set_timer_callback(lambda delay: cls.set_timer(new_state, delay))
+
+        new_state.update_reset_timer_callback(lambda delay: cls.reset_timer(new_state, delay))
+        new_state.update_bump_timer_callback(lambda delay: cls.bump_timer(new_state, delay))
 
         for p in player_connections:
             cls.game_states[p] = new_state
 
-        new_state.initialize()
+        new_state.start()
 
     @classmethod
-    def set_timer(cls, game, delay):
-        if not isinstance(game, GameState):
-            raise TypeError("Unsupported game state %s" % game)
+    def bump_timer(cls, game, d_delay):
+        if game not in cls.timer_deadlines:
+            raise ValueError("Attempt to bump non-set timer")
 
+        cls.set_timer(game, cls.timer_deadlines[game] + d_delay)
+
+    @classmethod
+    def reset_timer(cls, game, delay):
+        current_ioloop = tornado.ioloop.IOLoop.current()
+
+        cls.set_timer(game, current_ioloop.time() + delay)
+
+    @classmethod
+    def set_timer(cls, game, deadline):
         current_ioloop = tornado.ioloop.IOLoop.current()
 
         if game in cls.timers:
             current_ioloop.remove_timeout(cls.timers[game])
 
-        cls.timers[game] = current_ioloop.call_later(delay, cls.handle_timeout, game)
+        cls.timers[game] = current_ioloop.call_at(deadline, lambda: game.handle_timer_runout())
+        cls.timer_deadlines[game] = deadline
 
-    @classmethod
-    def handle_timeout(cls, game):
-        if not isinstance(game, GameState):
-            raise TypeError("Unsupported game state %s" % game)
-
-        game.timeout()
+        game.handle_timer_set(deadline - current_ioloop.time())
 
     @classmethod
     def update_num_looking_for_game(cls):

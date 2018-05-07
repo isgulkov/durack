@@ -125,7 +125,7 @@ class GameState:
 
         self._update_handlers = set()
 
-    # Creation
+    # Creation and initialization
 
     @classmethod
     def random_state(cls, players):
@@ -136,9 +136,7 @@ class GameState:
         player_hands = {}
 
         for uid, name in players:
-            hand = set(deck.pop() for _ in xrange(6))
-
-            player_hands[uid] = hand
+            player_hands[uid] = set(deck.pop() for _ in xrange(6))
 
         ordered_players = list(players)
         urandom_shuffle_inplace(ordered_players)
@@ -149,9 +147,13 @@ class GameState:
 
     @staticmethod
     def _choose_first_player(trump_suit, players, player_hands):
-        # Put the player that should move first at the beginning of the array in accorance to the rules of the game:
-        # * choose the player who has the trump card of the lowest rank,
-        # * if no one has trump cards, choose a player with who has a card with the lowest rank
+        '''
+        Rotate the `players` list such that the player that should move the first comes first.
+
+        Consider all the cards players have on their hands:
+        - if there are some trump cards, choose the player that has the trump card of the lowest rank;
+        - otherwise, choose a player that has a card with the lowest rank.
+        '''
 
         i_start = None
 
@@ -165,16 +167,57 @@ class GameState:
                     min_value = card_value
                     i_start = i
 
-        players[0], players[i_start] = players[i_start], players[0]
+        players[0:] = players[i_start:] + players[:i_start]
 
-    def initialize(self):
+    def start(self):
         for uid, name in self.players:
-            self._send_update(uid, {
-                'type': 'INITIALIZE GAME',
-                'init_state': self.as_dict_for_player(uid)
-            })
+            self._send_initialize(uid)
 
-        self._set_timer(10)
+        self._reset_timer()
+
+    # Observer management
+
+    def update_reset_timer_callback(self, callback):
+        self._reset_timer_callback = callback
+
+    def update_bump_timer_callback(self, callback):
+        self._bump_timer_callback = callback
+
+    def add_update_handler(self, handler):
+        '''
+        Add a handler that will be called by `_send_update()` to send to players state updates in form of deltas to
+        their view of the game state.
+
+        The handler is called with two arguments:
+        - `player_uid`: an opaque unique identifier of the player for whom the update is intended to;
+        - `msg`: state delta in form of a dict encoded for the client software.
+        '''
+
+        self._update_handlers.add(handler)
+
+        return lambda: self._update_handlers.remove(handler)
+
+    # Timer state
+
+    def handle_timer_set(self, delay):
+        self._send_reset_timer(delay)
+
+    def handle_timer_runout(self):
+        self._end_phase_on_timeout()
+
+    def _reset_timer(self):
+        '''
+        Reset move timer to a predefined delay (to be called at the beginning of a phase)
+        '''
+
+        self._reset_timer_callback(10.1)
+
+    def _bump_timer(self):
+        '''
+        Bump move timer delay by a predefined amount (to be called after a state-altering move)
+        '''
+
+        self._bump_timer_callback(3)
 
     # Information about state
 
@@ -387,18 +430,6 @@ class GameState:
 
     # Mutation of state
 
-    def _set_timer(self, delay):
-        self.set_timer(delay)
-
-        for uid, name in self.players:
-            self._send_update(uid, {
-                'change': 'SET TIMER',
-                'numSeconds': delay
-            })
-
-    def timeout(self):
-        pass # TODO: implement timeout actions
-
     def _opt_end_move(self, i_player):
         '''
         Register `i_player`th player's vote to end the current 'follow' phase.
@@ -410,6 +441,26 @@ class GameState:
             })
 
         self.end_move_votes[i_player] = True
+
+    def _end_phase_on_timeout(self):
+        '''
+        Abruptly end the current phase because the move timer has ran out.
+
+        - In the 'init' phase:
+          - if any cards have been put on the table, proceed to the corresponding 'follow';
+          - otherwise, proceed to the following 'init'.
+        - In the 'follow' phase:
+          - if there are any uncovered stacks, end follow phase normally and move to the following 'init';
+          - otherwise, consider the run out as a take move on part of the spotlight player.
+        '''
+
+        if self.phase == 'init':
+            self._end_init_phase()
+        elif self.phase == 'follow':
+            if self._get_num_empty_stacks() == 0:
+                self._end_follow_phase()
+            else:
+                self._apply_take_move(self.spotlight)
 
     def _reset_all_end_move_votes(self):
         # TODO: strictly define when these are reset
@@ -429,9 +480,6 @@ class GameState:
         # TODO: extract methods related to moves into individual Move classes, methods related to update notifications
         # TODO: into separate "Notifier" class, method related to player state into separate Player class.
         # TODO: This is 550 LOC already ffs
-
-        print "Before move:"
-        print self.as_dict()
 
         if move['action'] == 'MOVE PUT':
             card = Card.from_dict(move['card'])
@@ -471,6 +519,8 @@ class GameState:
         else:
             raise ValueError("Unknown type of move `%s`" % move['action'])
 
+        # TODO: don't throw exceptions on illegal moves, just return?
+
     def _apply_put_move(self, player_uid, card):
         '''
         Apply the move by the specified player to put the specified card. If another put by the player is not possible,
@@ -492,12 +542,16 @@ class GameState:
 
         if self.phase == 'init' and not self._put_possible(player_uid):
             self._end_init_phase()
+        else:
+            self._bump_timer()
 
         self._reset_all_end_move_votes()
 
     def _end_init_phase(self):
         '''
-        End the current 'init' phase and transition into the corresponding 'move' phase
+        End the current 'init' phase and transition into:
+        - the corresponding 'follow' phase, if any cards have been put on the table;
+        - the next 'init' phase if no cards have been put (i.e. move timer ran out).
         '''
 
         if self.phase != 'init':
@@ -505,9 +559,12 @@ class GameState:
 
         self._advance_spotlight()
 
-        self.phase = 'follow'
+        if len(self.table_stacks) != 0:
+            self.phase = 'follow'
 
-        self._send_phase()
+            self._send_phase()
+
+        self._reset_timer()
 
     def _advance_spotlight(self):
         '''
@@ -546,8 +603,8 @@ class GameState:
 
         if not self._follow_phase_will_continue():
             self._end_follow_phase()
-
-        return True
+        else:
+            self._bump_timer()
 
     def _hand_out_cards(self):
         '''
@@ -639,16 +696,9 @@ class GameState:
         if not self.in_game[self.spotlight]:
             self._advance_spotlight()
 
+        self._reset_timer()
 
     # Client state update
-
-    def add_set_timer_callback(self, callback):
-        self.set_timer = callback
-
-    def add_update_handler(self, handler):
-        self._update_handlers.add(handler)
-
-        return lambda: self._update_handlers.remove(handler)
 
     def _send_update(self, player_uid, msg):
         '''
@@ -665,6 +715,22 @@ class GameState:
 
         for uid, name in self.players:
             self._send_update(uid, msg)
+
+    def _send_initialize(self, player_uid):
+        '''
+        Update the specified player with the current game state in full
+        '''
+
+        self._send_update(player_uid, {
+            'type': 'INITIALIZE GAME',
+            'init_state': self.as_dict_for_player(player_uid)
+        })
+
+    def _send_reset_timer(self, new_delay):
+        self._send_update_to_all({
+            'change': 'SET TIMER',
+            'numSeconds': new_delay
+        })
 
     def _send_put_on_table(self, card):
         '''
