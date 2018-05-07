@@ -37,6 +37,7 @@ class Application(tornado.web.Application):
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
+        # TODO: integrate with parcel somehow
         self.render("../client/index.html")
 
 
@@ -95,6 +96,10 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def bump_timer(cls, game, d_delay):
+        """
+        Reset move timer for `game` to fire `d_delay` seconds further into the future than it would've otherwise
+        """
+
         if game not in cls.timer_deadlines:
             raise ValueError("Attempt to bump non-set timer")
 
@@ -102,12 +107,20 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def reset_timer(cls, game, delay):
+        """
+        Reset move timer for `game` to fire `delay` seconds in the future
+        """
+
         current_ioloop = tornado.ioloop.IOLoop.current()
 
         cls.set_timer(game, current_ioloop.time() + delay)
 
     @classmethod
     def set_timer(cls, game, deadline):
+        """
+        Reset move timer for `game` to fire at the moment specified by `deadline`
+        """
+
         current_ioloop = tornado.ioloop.IOLoop.current()
 
         if game in cls.timers:

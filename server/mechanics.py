@@ -485,7 +485,7 @@ class GameState:
             card = Card.from_dict(move['card'])
 
             if not self._is_valid_put_move(player_uid, card):
-                raise IllegalMoveException(move, self.as_dict()) # TODO: add details
+                raise IllegalMoveException(move, self.as_dict())  # TODO: add details
 
             self._apply_put_move(player_uid, card)
         elif move['action'] == 'MOVE DEFEND':
