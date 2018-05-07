@@ -104,9 +104,20 @@ class Card:
 
 
 class GameState:
+    # Creation and initialization
+
     def __init__(self, players, player_hands, table_stacks, leftover_deck, played_deck, bottom_card):
+        """
+        Construct a game state from "raw materials". The resulting state is not guaranteed to be suitable to start a
+        game -- use `create_random`.
+        """
+
         self.phase = 'init'
         self.spotlight = players[0][0]
+
+        self.frozen = False
+
+        self.end_summary = None
 
         # TODO: identify players by cookies rather then connection objects to support reconnect
         self.players = players  # TODO: Replace with just uids instead of tuples, put nicknames into a separate dict
@@ -125,10 +136,14 @@ class GameState:
 
         self._update_handlers = set()
 
-    # Creation and initialization
+        self.disconnected_players = set()
 
     @classmethod
-    def random_state(cls, players):
+    def create_random(cls, players):
+        """
+        Return an initial game state with the deck shuffled and players in random order.
+        """
+
         deck = Card.get_shuffled_deck()
 
         bottom_card = deck[0]
@@ -183,6 +198,18 @@ class GameState:
     def update_bump_timer_callback(self, callback):
         self._bump_timer_callback = callback
 
+    def update_pause_timer_callback(self, callback):
+        self._pause_timer_callback = callback
+
+    def update_resume_timer_callback(self, callback):
+        self._resume_timer_callback = callback
+
+    def update_get_timer_delay_callback(self, callback):
+        self._get_timer_delay_callback = callback
+
+    def update_end_game_callback(self, callback):
+        self._end_game_callback = callback
+
     def add_update_handler(self, handler):
         """
         Add a handler that will be called by `_send_update()` to send to players state updates in form of deltas to
@@ -196,6 +223,74 @@ class GameState:
         self._update_handlers.add(handler)
 
         return lambda: self._update_handlers.remove(handler)
+
+    # Connection persistence
+
+    def handle_disconnect(self, player_uid, reconnect_time):
+        """
+        Handle the specified player disconnecting from the server (i.e. losing network connection). Pause the game until
+        they either reconnect or time out.
+        """
+
+        self._send_disconnected(player_uid, reconnect_time)
+
+        self.disconnected_players.add(player_uid)
+
+        self._pause_timer()
+
+    def handle_reconnect(self, player_uid):
+        """
+        Handle the specified player reconnecting to the server (i.e. restoring network connection). Resume the game if
+        no other players are disconnected.
+        """
+
+        self._send_initialize(player_uid)
+
+        if self._game_has_ended():
+            self._send_game_end()
+
+            return
+
+        if player_uid in self.disconnected_players:
+            self.disconnected_players.remove(player_uid)
+
+            self._send_reconnected(player_uid)
+
+            if len(self.disconnected_players) == 0:
+                self._resume_timer()
+
+    def handle_disconnect_timeout(self, player_uid):
+        """
+        Handle the specified player timing out in the disconnected state. Count them out of the game and continue, if no
+        other players are disconnected.
+        """
+
+        self._send_timed_out(player_uid)
+
+        self.in_game[player_uid] = False
+
+        if self.spotlight == player_uid:
+            self._end_phase_on_timeout()
+
+        # TODO: instead move into leftover deck and reshuffle?
+
+        self._send_add_to_played_deck(len(self.player_hands[player_uid]))
+
+        while len(self.player_hands[player_uid]) != 0:
+            card = self.player_hands[player_uid].pop()
+
+            self._send_remove_from_hand(player_uid, card)
+
+            self.played_deck.append(card)
+
+        if self._game_will_end():
+            self._end_the_game()
+
+        if player_uid in self.disconnected_players:
+            self.disconnected_players.remove(player_uid)
+
+        if len(self.disconnected_players) == 0:
+            self._resume_timer()
 
     # Timer state
 
@@ -218,6 +313,21 @@ class GameState:
         """
 
         self._bump_timer_callback(3)
+
+    def _pause_timer(self):
+        """
+        Pause move timer until further resumption (to be called when players disconnect)
+        """
+
+        self._pause_timer_callback()
+
+    def _resume_timer(self):
+        """
+        Resume move timer that was previously paused (to be called when every disconnected player has either reconnected
+        or left)
+        """
+
+        self._resume_timer_callback()
 
     # Information about state
 
@@ -428,6 +538,23 @@ class GameState:
 
         return False
 
+    def _game_has_ended(self):
+        """
+        Return whether the game is already declared finished with the end summary populated
+        """
+
+        return self.end_summary is not None
+
+    def _game_will_end(self):
+        """
+        Return whether the game should be declared finished at this point
+        """
+
+        return sum(1 for uid, name in self.players if self.in_game[uid]) == 1
+
+    def _is_frozen(self):
+        return self.frozen
+
     # Mutation of state
 
     def _opt_end_move(self, i_player):
@@ -453,6 +580,11 @@ class GameState:
           - if there are any uncovered stacks, end follow phase normally and move to the following 'init';
           - otherwise, consider the run out as a take move on part of the spotlight player.
         """
+
+        if self._game_has_ended():
+            # Reject any timer events after the end of the game
+
+            return
 
         if self.phase == 'init':
             self._end_init_phase()
@@ -480,6 +612,11 @@ class GameState:
         # TODO: extract methods related to moves into individual Move classes, methods related to update notifications
         # TODO: into separate "Notifier" class, method related to player state into separate Player class.
         # TODO: This is 550 LOC already ffs
+
+        if self._is_frozen() or self._game_has_ended():
+            # Reject any moves after the game end or while frozen (waiting for the disconnected)
+
+            return
 
         if move['action'] == 'MOVE PUT':
             card = Card.from_dict(move['card'])
@@ -609,10 +746,10 @@ class GameState:
     def _hand_out_cards(self):
         """
         Hand cards out, i.e move the appropriate number of cards (possibly zero) from the top of the leftover deck into
-        the hand of each player so that all players have at least 6 cards.
+        the hand of each in-game player so that all of them have at least 6 cards.
 
-        The players are considered in order, starting from the spotlight. If at some point the leftover deck runs out,
-        the process is halted.
+        The in-game players are considered in order, starting from the spotlight. If at some point the leftover deck
+        runs out, the process is halted.
         """
 
         i_spotlight = self._index_of_player(self.spotlight)
@@ -622,6 +759,9 @@ class GameState:
         additional_cards = [[] for _ in players]
 
         for i, (uid, name) in enumerate(players):
+            if not self.in_game[uid]:
+                continue
+
             while len(self.player_hands[uid]) + len(additional_cards[i]) < 6 and len(self.leftover_deck) != 0:
                 additional_cards[i].append(self.leftover_deck.pop())
 
@@ -679,24 +819,52 @@ class GameState:
                 self._send_player_out_of_game(uid)
 
         # Only one player left in the game -- announce game end
-        if sum(1 for uid, name in self.players if self.in_game[uid]) == 1:
-            loser_uid = None
-            loser_nickname = None
-
-            for uid, name in self.players:
-                if self.in_game[uid]:
-                    loser_uid, loser_nickname = uid, name
-                    break
-
-            self._send_game_end(loser_uid, loser_nickname)
-
-            # TODO: set a flag to prohibit further moves
+        if self._game_will_end():
+            self._end_the_game()
 
         # Advance spotlight only if the former defending player went out of game, otherwise it's his turn now
         if not self.in_game[self.spotlight]:
             self._advance_spotlight()
 
         self._reset_timer()
+
+    def _end_the_game(self):
+        """
+        Declare the game finished by forming an end summary.
+
+        Note: the game is assumed to be in the state where it should be declared finished, with only one player left in
+        """
+
+        loser_uid = None
+        loser_nickname = None
+
+        for uid, name in self.players:
+            if self.in_game[uid]:
+                loser_uid, loser_nickname = uid, name
+                break
+
+        self.end_summary = {
+            'loser_uid': loser_uid,
+            'loser_nickname': loser_nickname
+        }
+
+        self._end_game_callback([uid for uid, name in self.players])
+
+        self._send_game_end()
+
+    def _freeze(self):
+        """
+        Freeze the game UI -- prevent players from making any moves
+        """
+
+        self.frozen = True
+
+    def _unfreeze(self):
+        """
+        Unfreeze the game UI -- allow players to make moves again
+        """
+
+        self.frozen = False
 
     # Client state update
 
@@ -716,6 +884,50 @@ class GameState:
         for uid, name in self.players:
             self._send_update(uid, msg)
 
+    def _send_disconnected(self, player_uid, reconnect_time):
+        """
+        Update *each player* that the specified player has disconnected and has `reconnect_time` seconds left to
+        reconnect.
+        """
+
+        for uid, name in self.players:
+            if uid == player_uid:
+                continue
+
+            self._send_update(uid, {
+                'type': 'PLAYER DISCONNECTED',
+                'iPlayer': self._relative_index_of_other_player(uid, player_uid),
+                'secondsLeft': reconnect_time
+            })
+
+    def _send_reconnected(self, player_uid):
+        """
+        Update *each player* that the specified player has reconnected.
+        """
+
+        for uid, name in self.players:
+            if uid == player_uid:
+                continue
+
+            self._send_update(uid, {
+                'type': 'PLAYER RECONNECTED',
+                'iPlayer': self._relative_index_of_other_player(uid, player_uid)
+            })
+
+    def _send_timed_out(self, player_uid):
+        """
+        Update *each player* that the specified player has timed out and is thus now out of the game.
+        """
+
+        for uid, name in self.players:
+            if uid == player_uid:
+                continue
+
+            self._send_update(uid, {
+                'type': 'PLAYER TIMED OUT',
+                'iPlayer': self._relative_index_of_other_player(uid, player_uid)
+            })
+
     def _send_initialize(self, player_uid):
         """
         Update the specified player with the current game state in full
@@ -723,7 +935,7 @@ class GameState:
 
         self._send_update(player_uid, {
             'type': 'INITIALIZE GAME',
-            'init_state': self.as_dict_for_player(player_uid)
+            'initState': self.as_dict_for_player(player_uid)
         })
 
     def _send_reset_timer(self, new_delay):
@@ -848,17 +1060,19 @@ class GameState:
                 'iPlayer': self._relative_index_of_other_player(uid, player_uid)
             })
 
-    def _send_game_end(self, loser_uid, loser_nickname):
+    def _send_game_end(self):
         """
         Update *each player* of the game ending and the specified player losing. To each player, provide the loser's
         nickname and whether the player themselves is the loser.
+
+        Note: the game is assumed to have ended and therefore `end_summary` field populated.
         """
 
         for uid, name in self.players:
             self._send_update(uid, {
                 'change': 'GAME ENDED',
-                'loserNickname': loser_nickname,
-                'loserIsYou': loser_uid == uid
+                'loserNickname': self.end_summary['loser_nickname'],
+                'loserIsYou': self.end_summary['loser_uid'] == uid
             })
 
     # Representation
@@ -904,9 +1118,9 @@ class GameState:
 
             'tableStacks': [
                 {
-                    'top': top.as_dict(),
-                    'bottom': bottom.as_dict() if bottom is not None else None
-                } for (top, bottom) in self.table_stacks
+                    'top': stack['top'].as_dict(),
+                    'bottom': stack['bottom'].as_dict() if stack['bottom'] is not None else None
+                } for stack in self.table_stacks
             ],
 
             'opponents': [
@@ -921,8 +1135,13 @@ class GameState:
             'leftoverStackSize': len(self.leftover_deck),
             'bottomCard': self.bottom_card.as_dict(),
 
-            'playedStackSize': len(self.played_deck)
+            'playedStackSize': len(self.played_deck),
             # TODO:^^^^^                       ^^^^
+
+            'playersDisconnected': {
+                self._relative_index_of_other_player(player_uid, uid):
+                    { 'numSeconds': 30 } for uid in self.disconnected_players if uid != player_uid
+            }
         }
 
 

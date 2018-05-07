@@ -64,6 +64,11 @@ let sendActionsMiddleware = (socket) => (store => next => action => {
             type: 'OPT TO END MOVE'
         });
     }
+    else if(action.type === 'FINISH GAME') {
+        msg = {
+            action: 'FINISH GAME'
+        };
+    }
 
     if(msg !== null) {
         console.log("sending", msg);

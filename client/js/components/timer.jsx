@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { getTimeString } from "./utility/timer";
+
 class Timer extends React.Component {
     getStyle() {
         return {
@@ -20,13 +22,6 @@ class Timer extends React.Component {
         }
     }
 
-    static getTimeString(nSecs) {
-        const minutes = Math.floor(nSecs / 60);
-        const seconds = Math.floor(nSecs % 60);
-
-        return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-    }
-
     render() {
         const timer = this.props.timer;
 
@@ -36,7 +31,7 @@ class Timer extends React.Component {
 
         return (
             <div style={this.getStyle()}>
-                {Timer.getTimeString(timer.numSeconds)}
+                {getTimeString(timer.numSeconds)}
             </div>
         )
     }

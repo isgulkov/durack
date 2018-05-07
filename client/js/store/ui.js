@@ -1,9 +1,9 @@
-import { combineReducers, createStore } from "redux";
+import { combineReducers } from "redux";
 
 import { fGame } from "./game";
 import { fMenu } from "./menu";
 
-let fSocket = (state, action) => {
+const fSocket = (state, action) => {
     if(state === undefined) {
         return null;
     }
@@ -18,10 +18,8 @@ let fSocket = (state, action) => {
     return state;
 };
 
-let fUiState = combineReducers({
+export const fUiState = combineReducers({
     game: fGame,
     menu: fMenu,
     socket: fSocket
 });
-
-export { fUiState };

@@ -23,11 +23,17 @@ class Card extends React.Component {
         return style;
     }
 
+    handleClick() {
+
+    }
+
     render() {
         return (
             <div className={this.props.onClick ? 'clickable' : ''}
                  style={this.getStyle()}
-                 onClick={() => this.props.onClick()} />
+                 onClick={
+                     this.props.onClick !== undefined ? (() => this.props.onClick()) : null
+                 } />
         );
     }
 }
