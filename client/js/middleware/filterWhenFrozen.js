@@ -9,7 +9,6 @@ export const filterWhenFrozen = (store => next => action => {
 
         const gameState = store.getState().game;
 
-        // TODO: replace with a less expensive check -- this is done very often
         if(gameState !== 'no game' && Object.keys(gameState.playersDisconnected).length !== 0) {
             return;
         }

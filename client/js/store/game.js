@@ -1,9 +1,6 @@
 import { combineReducers } from "redux";
 
-// TODO: redo this and other stores in let/const
-// TODO: use default args in all reducers
-
-let fNumPlayers = function(state=null, action) {
+const fNumPlayers = (state=null, action) => {
     return state;
 };
 
@@ -92,7 +89,7 @@ const fOpponents = (state=null, action) => {
             return newState;
         }
         else if(action.change === 'PLAYER OUT OF GAME' && action.iPlayer !== 0) {
-            let newState = state.slice(0); // TODO: these variable names...
+            let newState = state.slice(0);
 
             newState[action.iPlayer - 1].inGame = false;
 
@@ -232,7 +229,7 @@ let fInitializedGame = combineReducers({
     leftoverStackSize: fLeftoverStackSize,
     bottomCard: fBottomCard,
     playedStackSize: fPlayedStackSize,
-    defendMoveCard: fDefendMoveCard, // TODO: move these out of the game state (or rename the "game state"?)
+    defendMoveCard: fDefendMoveCard,
     timer: fTimer,
     optedEndMove: fOptedEndMove,
     playersDisconnected: fPlayersDisconnected,

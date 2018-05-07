@@ -28,7 +28,6 @@ let sendActionsMiddleware = store => next => action => {
             });
         }
         else {
-            // TODO: locally validate move more
             msg = {
                 action: 'MOVE PUT',
                 card: action.card
