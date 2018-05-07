@@ -385,6 +385,9 @@ class GameState:
         if any(stack['bottom'] is None for stack in self.table_stacks):
             return False
 
+        if len(self.player_hands[self.spotlight]) == 0:
+            return True
+
         for i, (uid, name) in enumerate(self.players):
             if uid == self.spotlight:
                 continue
