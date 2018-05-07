@@ -33,8 +33,6 @@ class _PlayersHand extends React.Component {
 
             const defendMoveCard = this.props.defendMoveCard;
 
-            console.log(defendMoveCard, card);
-
             if(defendMoveCard !== null && defendMoveCard.suit === card.suit && defendMoveCard.rank === card.rank) {
                 defendCardHighLight = (
                     <Highlight text="Отмена" x={xOffset - 4} y={yOffset - 4}
@@ -57,8 +55,6 @@ export const PlayersHand = connect(
     undefined,
     {
         sendHandSelect: card => {
-            console.log(card);
-
             return {
                 type: 'SEND HAND SELECT',
                 card: card

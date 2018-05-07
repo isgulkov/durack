@@ -25,14 +25,17 @@ class Game extends React.Component {
         }
 
         return (
-            <div id="canvas_container">
-                <div id="main_canvas"
-                     style={{
+            <div style={{
+                'textAlign': 'center'
+            }}>
+                <div style={{
                          'width': TABLE_WIDTH,
                          'height': TABLE_HEIGHT,
-                         'padding': 0,
                          'position': 'relative',
-                         'overflow': 'hidden'
+                         'overflow': 'hidden',
+
+                         'padding': 0,
+                         'margin': '40px auto',
                      }}
                 >
                     <BgCanvas numPlayers={gameState.numPlayers}

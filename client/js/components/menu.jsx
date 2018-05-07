@@ -28,6 +28,24 @@ class FindGameBlock extends React.Component {
 }
 
 class Menu extends React.Component {
+    static getContainerStyle() {
+        return {
+            'position': 'fixed',
+            'top': '200px',
+            'width': '100%',
+            'textAlign': 'center'
+        };
+    }
+
+    static getMenuStyle() {
+        return {
+            'margin': '0 auto',
+            'maxWidth': '300px',
+            'padding': '25px',
+            'background': 'white'
+        };
+    }
+
     render() {
         let menuState = this.props.state;
 
@@ -36,8 +54,8 @@ class Menu extends React.Component {
         }
 
         return (
-            <div id="menu_container">
-                <div id="menu">
+            <div style={Menu.getContainerStyle()}>
+                <div style={Menu.getMenuStyle()}>
                     { // TODO: switch/if
                         menuState.status === "initial" || menuState.status === "looking"
                             ? <FindGameBlock isLooking={menuState.status === "looking"}

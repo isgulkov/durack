@@ -52,6 +52,8 @@ socket.onclose = (e) => {
     });
 };
 
+// TODO: cursors
+
 // TODO: register vote for "end move" when "End move" is pressed by the init player to end init
 // TODO: deregister vote for "end move" only when new move ops arise?
 
