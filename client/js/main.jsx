@@ -8,7 +8,7 @@ import { GameUI } from "./components/containers/ui";
 import { fUiState } from "./store/ui";
 
 import { sendActionsMiddleware } from "./middleware/sendActions";
-import { processTimerAction } from "./middleware/processTimerAction";
+import { processTimerActions } from "./middleware/processTimerActions";
 import { processPlayerIdentity } from "./middleware/processPlayerIdentity";
 
 // TODO: rewrite in socket.io or just implement reconnection (both sides)
@@ -18,7 +18,7 @@ document.socket = socket;
 
 let uiStore = createStore(
     fUiState,
-    applyMiddleware(sendActionsMiddleware(socket), processTimerAction, processPlayerIdentity)
+    applyMiddleware(sendActionsMiddleware(socket), processTimerActions, processPlayerIdentity)
 );
 
 // uiStore.subscribe(() => console.log("state", uiStore.getState()));
@@ -38,7 +38,7 @@ uiStore.dispatch({
 socket.onmessage = (event) => {
     let action = JSON.parse(event.data);
 
-    // console.log("From socket:", action);
+    console.log("From socket:", action);
 
     uiStore.dispatch(action);
 

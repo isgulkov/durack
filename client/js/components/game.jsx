@@ -9,6 +9,7 @@ import { Timer } from "./timer";
 import { BottomCard } from "./bottomCard";
 import { LeftoverStack } from "./leftoverStack";
 import { PlayedStack } from "./playedStack";
+import { PlayersDisconnected } from "./playersDisconnected";
 
 // TODO: propagate these to BgCanvas
 const TABLE_WIDTH = 1000;
@@ -64,22 +65,29 @@ class Game extends React.Component {
 
                     <BigControl gameState={gameState}
                                 totalWidth={TABLE_WIDTH}
-                                totalHeight={TABLE_HEIGHT}/>
+                                totalHeight={TABLE_HEIGHT} />
 
                     <Timer timer={gameState.timer}
                            // TODO: use these to draw timer in different places ?
                            currentPhase={gameState.currentPhase} currentActor={gameState.currentActor}
                            totalWidth={TABLE_WIDTH}
-                           totalHeight={TABLE_HEIGHT}/>
+                           totalHeight={TABLE_HEIGHT} />
 
                     <BottomCard bottomCard={gameState.bottomCard}
                                 stackSize={gameState.leftoverStackSize}
-                                totalHeight={TABLE_HEIGHT}/>
-                    <LeftoverStack stackSize={gameState.leftoverStackSize}/>
+                                totalHeight={TABLE_HEIGHT} />
+                    <LeftoverStack stackSize={gameState.leftoverStackSize} />
 
                     <PlayedStack stackSize={gameState.playedStackSize}
                                  totalWidth={TABLE_WIDTH}
-                                 totalHeight={TABLE_HEIGHT}/>
+                                 totalHeight={TABLE_HEIGHT} />
+
+                    <PlayersDisconnected playersDisconnected={gameState.playersDisconnected}
+                                         opponentNicknames={gameState.opponents.map(hand => {
+                                             return hand.nickname;
+                                         })}
+                                         totalWidth={TABLE_WIDTH}
+                                         totalHeight={TABLE_HEIGHT} />
                 </div>
             </div>
         );

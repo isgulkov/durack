@@ -1,5 +1,8 @@
 import { combineReducers } from "redux";
 
+// TODO: redo this and other stores in let/const
+// TODO: use default args in all reducers
+
 let fNumPlayers = function(state, action) {
     if(state === undefined) {
         return null;
@@ -179,7 +182,7 @@ let fTimer = function(state, action) {
     }
 
     if(action.type === 'TIMER TICK' && state !== null) {
-        if(state.numSeconds === 0) {
+        if(state.numSeconds <= 0) {
             clearInterval(state.interval);
 
             return null;
@@ -221,6 +224,36 @@ let fOptedEndMove = function(state, action) {
     return state;
 };
 
+let fPlayersDisconnected = (state={}, action) => {
+    if(action.type === 'PLAYER DISCONNECTED') {
+        let newState = Object.assign({}, state);
+
+        newState[action.iPlayer] = {
+            secondsLeft: action.secondsLeft,
+            interval: action.interval
+        };
+
+        return newState;
+    }
+    else if(action.type === 'DISCONNECT TICK') {
+        let newState = Object.assign({}, state);
+
+        newState[action.iPlayer].secondsLeft -= 1;
+
+        return newState;
+    }
+    else if(action.type === 'PLAYER RECONNECTED' || action.type === 'PLAYER LEFT') {
+        let newState = Object.assign({}, state);
+
+        clearInterval(newState[action.iPlayer].interval);
+        delete newState[action.iPlayer];
+
+        return newState;
+    }
+
+    return state;
+};
+
 let fInitializedGame = combineReducers({
     numPlayers: fNumPlayers,
     currentPhase: fCurrentPhase,
@@ -233,7 +266,8 @@ let fInitializedGame = combineReducers({
     playedStackSize: fPlayedStackSize,
     defendMoveCard: fDefendMoveCard, // TODO: move these out of the game state (or rename the "game state"?)
     timer: fTimer,
-    optedEndMove: fOptedEndMove
+    optedEndMove: fOptedEndMove,
+    playersDisconnected: fPlayersDisconnected
 });
 
 let fGame = function(state, action) {
@@ -242,7 +276,7 @@ let fGame = function(state, action) {
     }
 
     if(action.type === 'INITIALIZE GAME') {
-        return fGame(action.init_state, {type: NaN});
+        return fGame(action.initState, {type: NaN});
     }
     else if(action.type === 'CLICK FINISH GAME') {
         return 'no game';

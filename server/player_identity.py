@@ -7,7 +7,7 @@ class PlayerIdentity:
 
     def __init__(self, uid):
         self._uid = uid
-        self.nickname = 'Player %s' % (uid[-4:])
+        self.nickname = 'Player %s' % (uid[:4])
 
     def __eq__(self, other):
         return self._uid == other._uid
@@ -33,3 +33,9 @@ class PlayerIdentity:
         cls.all_identities[uid] = PlayerIdentity(uid)
 
         return cls.all_identities[uid]
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return "<PlayerID %s, %s>" % (self.uid, self.nickname,)

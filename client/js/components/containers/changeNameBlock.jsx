@@ -6,7 +6,7 @@ class _ChangeNameBlock extends React.Component {
         super(props);
 
         this.state = {
-            promptVal: props.nickname
+            promptVal: props.currentNickname
         };
     }
 
@@ -14,6 +14,23 @@ class _ChangeNameBlock extends React.Component {
         this.setState({
             promptVal: this.refs.nicknamePrompt.value
         });
+    }
+
+    componentDidUpdate() {
+        if(this.props.isChangingNickname) {
+            if(this.state.promptVal === "") {
+                this.setState({
+                    promptVal: this.props.currentNickname
+                });
+            }
+        }
+        else {
+            if(this.state.promptVal !== "") {
+                this.setState({
+                    promptVal: ""
+                });
+            }
+        }
     }
 
     render() {
@@ -36,7 +53,7 @@ class _ChangeNameBlock extends React.Component {
         else {
             return (
                 <p>
-                    Ваше имя: <em>{this.props.nickname}</em>&nbsp;
+                    Ваше имя: <em>{this.props.currentNickname}</em>&nbsp;
                     <a href="#" onClick={e => {
                         e.preventDefault();
                         this.props.sendChangeNickname();
@@ -48,7 +65,11 @@ class _ChangeNameBlock extends React.Component {
 }
 
 export let ChangeNameBlock = connect(
-    undefined,
+    (state) => {
+        return {
+            currentNickname: state.menu.currentNickname
+        };
+    },
     {
         sendNewNickname: (newNickname) => {
             return {

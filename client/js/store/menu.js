@@ -53,7 +53,7 @@ let fNumLooking = function(state, action) {
 
 let fCurrentNickname = function(state, action) {
     if(state === undefined) {
-        return "Игрок"; // TODO: magic value
+        return "—"; // TODO: magic value
     }
 
     if(action.type === 'CONFIRM SET NICKNAME') {
