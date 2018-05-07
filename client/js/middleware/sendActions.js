@@ -42,7 +42,7 @@ let sendActionsMiddleware = (socket) => (store => next => action => {
             msg = {
                 action: 'MOVE DEFEND',
                 card: gameState.defendMoveCard,
-                i_stack: action.iStack
+                iStack: action.iStack
             };
 
             store.dispatch({

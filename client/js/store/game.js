@@ -26,7 +26,9 @@ let fCurrentActor = function(state, action) {
     }
 
     if(action.type === 'STATE DELTA' && action.change === 'SPOTLIGHT') {
-        return action.i_spotlight;
+        console.log("new spotlight", action.iSpotlight);
+
+        return action.iSpotlight;
     }
 
     return state;
@@ -79,7 +81,7 @@ let fTableStacks = function(state, action) {
     else if(action.type === 'STATE DELTA' && action.change === 'PUT ONTO STACK') {
         var mutatedState = state.slice(0);
 
-        mutatedState[action.i_stack].bottom = action.card;
+        mutatedState[action.iStack].bottom = action.card;
 
         return mutatedState;
     }
@@ -97,25 +99,25 @@ let fOpponents = function(state, action) {
 
     if(action.type === 'STATE DELTA') {
         if(action.change === 'REMOVE FROM OPPONENT HAND') {
-            var decreasedState = state.slice(0);
+            let newState = state.slice(0);
 
-            decreasedState[action.i_opponent].numCards -= 1;
+            newState[action.iOpponent].numCards -= 1;
 
-            return decreasedState;
+            return newState;
         }
         else if(action.change === 'ADD TO OPPONENT HAND') {
-            var increasedState = state.slice(0);
+            let newState = state.slice(0);
 
-            increasedState[action.i_opponent].numCards += action.numCards;
+            newState[action.iOpponent].numCards += action.numCards;
 
-            return increasedState;
+            return newState;
         }
         else if(action.change === 'PLAYER OUT OF GAME' && action.iPlayer !== 0) {
-            var outedState = state.slice(0); // TODO: these variable names...
+            let newState = state.slice(0); // TODO: these variable names...
 
-            outedState[action.iPlayer - 1].inGame = false;
+            newState[action.iPlayer - 1].inGame = false;
 
-            return outedState;
+            return newState;
         }
     }
 
