@@ -39,7 +39,7 @@ export let EndGameBlock = connect(
     {
         sendFinishGame: () => {
             return {
-                type: 'CLICK FINISH GAME'
+                type: 'FINISH GAME'
             };
         }
     }

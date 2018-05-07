@@ -122,18 +122,19 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         identity = self._identity
 
-        del self.connection_with[identity]
+        if identity in self.connection_with:
+            del self.connection_with[identity]
 
         if identity in self.matchmaking_pool:
             self.remove_from_matchmaking_pool(identity)
         elif identity in self.running_games:
             game = self.running_games[identity]
 
-            RECONNECT_TIME = 5
+            RECONNECT_TIME = 5  # TODO: ~30
 
             game.handle_disconnect(identity, RECONNECT_TIME)
 
-            disconnect_timer = self.get_ioloop().call_later(RECONNECT_TIME, lambda: game.handle_leave(identity))
+            disconnect_timer = self.get_ioloop().call_later(RECONNECT_TIME, lambda: game.handle_disconnect_timeout(identity))
 
             self.disconnect_timers[identity] = disconnect_timer
 
@@ -193,6 +194,24 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             'newNickname': nickname
         }))
 
+    @classmethod
+    def remove_players_from_games(cls, identities):
+        for p in identities:
+            cls.remove_player_from_game(p)
+
+    @classmethod
+    def remove_player_from_game(cls, identity):
+        logging.warn("Remove %s from games" % identity)
+
+        if identity in cls.running_games:
+            logging.warn("Removed")
+
+            del cls.running_games[identity]
+
+        cls.send_state_update_to_player(identity, {
+            'type': 'QUIT FROM GAME'
+        }, call_handler_on_disconnect=False)
+
     def on_message(self, message):
         msg = json.loads(message)
 
@@ -221,11 +240,11 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 logging.warning("Player %s issued an illegal move: %s" % (self, repr(e), ))
 
                 logging.warning(game.as_dict())
+        elif msg['action'] == 'FINISH GAME':
+            self.remove_player_from_game(self._identity)
 
     @classmethod
-    def send_state_update_to_player(cls, identity, update):
-        # print update, 'to', repr(identity)
-
+    def send_state_update_to_player(cls, identity, update, call_handler_on_disconnect=True):
         if identity in cls.disconnect_timers:
             # Already disconnected
             return
@@ -238,7 +257,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         try:
             connection.write_message(json.dumps(update))
         except tornado.websocket.WebSocketClosedError:
-            cls.handle_disconnect(identity)
+            if call_handler_on_disconnect:
+                cls.handle_disconnect(identity)
 
     @classmethod
     def initialize_game(cls, identities):
@@ -251,6 +271,11 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         new_state.update_bump_timer_callback(lambda delay: cls.bump_timer(new_state, delay))
         new_state.update_pause_timer_callback(lambda: cls.pause_timer(new_state))
         new_state.update_resume_timer_callback(lambda: cls.resume_timer(new_state))
+
+        # TODO: ~20s
+        new_state.update_end_game_callback(
+            lambda identities: cls.get_ioloop().call_later(5, lambda: cls.remove_players_from_games(identities))
+        )
 
         for p in identities:
             cls.running_games[p] = new_state

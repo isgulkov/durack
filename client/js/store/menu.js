@@ -24,7 +24,7 @@ const fStatus = (state='initial', action) => {
     else if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
         return 'game end';
     }
-    else if(action.type === 'CLICK FINISH GAME') {
+    else if(action.type === 'QUIT FROM GAME') {
         return 'initial';
     }
 
@@ -65,7 +65,7 @@ const fEndSummary = (state=null, action) => {
             'isLoser': action.loserIsYou
         }
     }
-    else if(action.type === 'CLICK FINISH GAME') {
+    else if(action.type === 'QUIT FROM GAME') {
         return null;
     }
 

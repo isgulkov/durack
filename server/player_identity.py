@@ -38,4 +38,4 @@ class PlayerIdentity:
         return repr(self)
 
     def __repr__(self):
-        return "<PlayerID %s, %s>" % (self.uid, self.nickname,)
+        return "<PlayerID %s, %s>" % (self.uid, self.nickname.encode('utf-8'),)

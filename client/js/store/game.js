@@ -142,6 +142,9 @@ const fDefendMoveCard = (state=null, action) => {
 };
 
 const fTimer = (state=null, action) => {
+    if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
+        return null;
+    }
     if(action.type === 'TIMER TICK' && state !== null) {
         if(state.numSeconds <= 0) {
             clearInterval(state.interval);
@@ -199,7 +202,7 @@ const fPlayersDisconnected = (state={}, action) => {
 
         return newState;
     }
-    else if(action.type === 'PLAYER RECONNECTED' || action.type === 'PLAYER LEFT') {
+    else if(action.type === 'PLAYER RECONNECTED' || action.type === 'PLAYER TIMED OUT') {
         let newState = Object.assign({}, state);
 
         clearInterval(newState[action.iPlayer].interval);
@@ -210,6 +213,14 @@ const fPlayersDisconnected = (state={}, action) => {
 
     return state;
 };
+
+const fHasEnded = (state=false, action) => {
+    if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
+        return true;
+    }
+
+    return state;
+}
 
 let fInitializedGame = combineReducers({
     numPlayers: fNumPlayers,
@@ -224,14 +235,15 @@ let fInitializedGame = combineReducers({
     defendMoveCard: fDefendMoveCard, // TODO: move these out of the game state (or rename the "game state"?)
     timer: fTimer,
     optedEndMove: fOptedEndMove,
-    playersDisconnected: fPlayersDisconnected
+    playersDisconnected: fPlayersDisconnected,
+    hasEnded: fHasEnded
 });
 
 export const fGame = function(state='no game', action) {
     if(action.type === 'INITIALIZE GAME') {
         return fGame(action.initState, {type: NaN});
     }
-    else if(action.type === 'CLICK FINISH GAME') {
+    else if(action.type === 'QUIT FROM GAME') {
         return 'no game';
     }
     else if(state !== 'no game') {

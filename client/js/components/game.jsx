@@ -41,7 +41,7 @@ class Game extends React.Component {
                      }}
                 >
                     <BgCanvas numPlayers={gameState.numPlayers}
-                              currentPhase={gameState.currentPhase}
+                              currentPhase={gameState.hasEnded ? null : gameState.currentPhase}
                               currentActor={gameState.currentActor}>
                     </BgCanvas>
 
@@ -82,12 +82,15 @@ class Game extends React.Component {
                                  totalWidth={TABLE_WIDTH}
                                  totalHeight={TABLE_HEIGHT} />
 
-                    <PlayersDisconnected playersDisconnected={gameState.playersDisconnected}
-                                         opponentNicknames={gameState.opponents.map(hand => {
-                                             return hand.nickname;
-                                         })}
-                                         totalWidth={TABLE_WIDTH}
-                                         totalHeight={TABLE_HEIGHT} />
+                    {
+                        gameState.hasEnded ? null
+                            : <PlayersDisconnected playersDisconnected={gameState.playersDisconnected}
+                                                   opponentNicknames={gameState.opponents.map(hand => {
+                                                       return hand.nickname;
+                                                   })}
+                                                   totalWidth={TABLE_WIDTH}
+                                                   totalHeight={TABLE_HEIGHT} />
+                    }
                 </div>
             </div>
         );

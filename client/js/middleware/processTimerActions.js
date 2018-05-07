@@ -23,14 +23,6 @@ export const processTimerActions = (store => next => action => {
     else if(action.type === 'PLAYER DISCONNECTED') {
         action.interval = createDisconnectTickInteval(store, action.iPlayer)
     }
-    else if(action.type === 'TIMER TICK') {
-        // TODO: replace with a less expensive check -- this is done very often
-        if(Object.keys(store.getState().game.playersDisconnected).length !== 0) {
-            // Move timers are frozen on the server side when there are disconnected players
-
-            return;
-        }
-    }
     else if(action.type === 'INITIALIZE GAME') {
         // Restore the `setInterval`s on an initState
         const moveTimer = action.initState.timer;

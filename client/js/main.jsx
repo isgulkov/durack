@@ -10,15 +10,14 @@ import { fUiState } from "./store/ui";
 import { sendActionsMiddleware } from "./middleware/sendActions";
 import { processTimerActions } from "./middleware/processTimerActions";
 import { processPlayerIdentity } from "./middleware/processPlayerIdentity";
+import { filterWhenFrozen } from "./middleware/filterWhenFrozen";
 
 // TODO: rewrite in socket.io or just implement reconnection (both sides)
 let socket = new WebSocket('ws://localhost:8888/game');
 
-document.socket = socket;
-
 let uiStore = createStore(
     fUiState,
-    applyMiddleware(sendActionsMiddleware(socket), processTimerActions, processPlayerIdentity)
+    applyMiddleware(filterWhenFrozen, sendActionsMiddleware(socket), processTimerActions, processPlayerIdentity)
 );
 
 // uiStore.subscribe(() => console.log("state", uiStore.getState()));
@@ -53,7 +52,9 @@ socket.onclose = (e) => {
     });
 };
 
-// TODO: proper game end: no reconnects
+// TODO: actual reconnect after socket is closed
+
+// TODO: a more interesting summary
 
 // TODO: graphically show when the player is out of game himself
 

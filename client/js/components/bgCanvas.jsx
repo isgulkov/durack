@@ -20,7 +20,7 @@ class BgCanvas extends React.Component {
 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        if(this.props.currentActor !== undefined) {
+        if(this.props.currentActor !== null) {
             ctx.save();
 
             ctx.globalAlpha = 0.5;
