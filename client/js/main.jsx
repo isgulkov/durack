@@ -54,9 +54,6 @@ socket.onclose = (e) => {
 
 // TODO: graphically show when the player is out of game himself
 
-// TODO: move timer out of state and make middleware manage it (?)
-// TODO: implement move timer
-
 // TODO: RECONNECTION and session persistence!
 
 // TODO: Switch to ' in "symbols" and module names everywhere

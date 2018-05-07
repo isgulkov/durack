@@ -3,11 +3,11 @@ import logging
 
 
 def urandom_shuffle_inplace(xs):
-    '''
+    """
     Shuffle list `xs` in-place using Knuth shuffle.
 
     The randomness is taken from `random.SystemRandom`, which is supposed to use 'urandom' or its equivalent.
-    '''
+    """
 
     rnd = SystemRandom()
 
@@ -18,11 +18,11 @@ def urandom_shuffle_inplace(xs):
 
 
 def urandom_shuffled(xs):
-    '''
+    """
     Returns a list of all items from `xs` iterator shuffled using "inside-out" Knuth shuffle.
 
     The randomness is taken from `random.SystemRandom`, which is supposed to use 'urandom' or its equivalent.
-    '''
+    """
 
     rnd = SystemRandom()
 
@@ -147,13 +147,13 @@ class GameState:
 
     @staticmethod
     def _choose_first_player(trump_suit, players, player_hands):
-        '''
+        """
         Rotate the `players` list such that the player that should move the first comes first.
 
         Consider all the cards players have on their hands:
         - if there are some trump cards, choose the player that has the trump card of the lowest rank;
         - otherwise, choose a player that has a card with the lowest rank.
-        '''
+        """
 
         i_start = None
 
@@ -184,14 +184,14 @@ class GameState:
         self._bump_timer_callback = callback
 
     def add_update_handler(self, handler):
-        '''
+        """
         Add a handler that will be called by `_send_update()` to send to players state updates in form of deltas to
         their view of the game state.
 
         The handler is called with two arguments:
         - `player_uid`: an opaque unique identifier of the player for whom the update is intended to;
         - `msg`: state delta in form of a dict encoded for the client software.
-        '''
+        """
 
         self._update_handlers.add(handler)
 
@@ -206,25 +206,25 @@ class GameState:
         self._end_phase_on_timeout()
 
     def _reset_timer(self):
-        '''
+        """
         Reset move timer to a predefined delay (to be called at the beginning of a phase)
-        '''
+        """
 
         self._reset_timer_callback(10.1)
 
     def _bump_timer(self):
-        '''
+        """
         Bump move timer delay by a predefined amount (to be called after a state-altering move)
-        '''
+        """
 
         self._bump_timer_callback(3)
 
     # Information about state
 
     def _index_of_player(self, player_uid):
-        '''
+        """
         Get index of the specified player on the playing field.
-        '''
+        """
 
         # TODO; do something about all these indices (put in hash table ?)
         for i, (uid, name) in enumerate(self.players):
@@ -234,9 +234,9 @@ class GameState:
             raise ValueError("No player with uid `%s` in the game" % player_uid)
 
     def _relative_index_of_other_player(self, this_player, other_player):
-        '''
+        """
         Get index of `other_player` on `this_player`'s playing field view.
-        '''
+        """
 
         i_this_player = self._index_of_player(this_player)
         i_other_player = self._index_of_player(other_player)
@@ -244,9 +244,9 @@ class GameState:
         return (i_other_player - i_this_player) % len(self.players)
 
     def _get_table_cards(self):
-        '''
+        """
         Get all cards currently on the table (in no particular order).
-        '''
+        """
 
         for stack in self.table_stacks:
             yield stack['top']
@@ -255,25 +255,25 @@ class GameState:
                 yield stack['bottom']
 
     def _get_num_empty_stacks(self):
-        '''
+        """
         Get the number of stacks currently on the table that aren't covered (have no 'bottom' card).
-        '''
+        """
 
         return sum(1 for stack in self.table_stacks if stack['bottom'] is None)
 
     def _get_next_player(self):
-        '''
+        """
         Get the uid of the next player in order to take `spotlight`.
-        '''
+        """
 
         # TODO: skip out of game players!
         # TODO: use this where needed
         return self.players[(self._index_of_player(self.spotlight) + 1) % len(self.players)][0]
 
     def _get_defending_player(self):
-        '''
+        """
         Get the uid of the player against whom the moves are made.
-        '''
+        """
 
         if self.phase == 'follow':
             return self.spotlight
@@ -285,7 +285,7 @@ class GameState:
     # Predicates on state
 
     def _is_valid_put_move(self, player_uid, card):
-        '''
+        """
         Return if `card` being put by the specified player is a valid put move.
 
         The decision process is as follows:
@@ -298,7 +298,7 @@ class GameState:
         3. Decline if there are already as many uncovered stacks on the table as the defending player has cards.
         4. Accept if there are cards on table of the same rank as `card`.
         5. Decline otherwise.
-        '''
+        """
 
         if (self.phase == 'init' and self.spotlight != player_uid) \
                 or (self.phase == 'follow' and self.spotlight == player_uid):
@@ -325,9 +325,9 @@ class GameState:
         return False
 
     def _put_possible(self, player_uid):
-        '''
+        """
         Return if the specified player can make a put move with any of his cards.
-        '''
+        """
 
         # TODO: refactor this check?
         for card in self.player_hands[player_uid]:
@@ -337,7 +337,7 @@ class GameState:
         return False
 
     def _is_valid_defend_move(self, player_uid, card, i_stack):
-        '''
+        """
         Return if `card` being used by the specified player to cover `i_stack`th stack is a valid defend move.
 
         The decision process is as follows:
@@ -351,7 +351,7 @@ class GameState:
            - `card` and the stack's top card have the same suit, and `card`'s rank is higher;
            - `card` is of trump suit and the stack's top card isn't.
         3. Decline otherwise.
-        '''
+        """
 
         if self.phase != 'follow' or self.spotlight != player_uid:
             return False
@@ -378,14 +378,14 @@ class GameState:
         return False
 
     def _is_valid_take_move(self, player_uid):
-        '''
+        """
         Return if the specified player can perform the take move.
 
         Accepts if and only if all of the following is true:
         - the phase is 'follow';
         - the spotlight is on the player;
         - there are cards on the table.
-        '''
+        """
 
         if self.spotlight != player_uid:
             return False
@@ -399,7 +399,7 @@ class GameState:
         return True
 
     def _follow_phase_will_continue(self):
-        '''
+        """
         Return if the current 'follow' phase will continue on the last move.
 
         The decision process is as follows:
@@ -408,7 +408,7 @@ class GameState:
         2. Decline if the spotlight player has no more cards in his hand.
         3. Accept if a put move possible by any of the players who have not yet voted to end move.
         4. Decline otherwise.
-        '''
+        """
 
         if any(stack['bottom'] is None for stack in self.table_stacks):
             return True
@@ -431,9 +431,9 @@ class GameState:
     # Mutation of state
 
     def _opt_end_move(self, i_player):
-        '''
+        """
         Register `i_player`th player's vote to end the current 'follow' phase.
-        '''
+        """
 
         if not self.end_move_votes[i_player]:
             self._send_update(self.players[i_player][0], {
@@ -443,7 +443,7 @@ class GameState:
         self.end_move_votes[i_player] = True
 
     def _end_phase_on_timeout(self):
-        '''
+        """
         Abruptly end the current phase because the move timer has ran out.
 
         - In the 'init' phase:
@@ -452,7 +452,7 @@ class GameState:
         - In the 'follow' phase:
           - if there are any uncovered stacks, end follow phase normally and move to the following 'init';
           - otherwise, consider the run out as a take move on part of the spotlight player.
-        '''
+        """
 
         if self.phase == 'init':
             self._end_init_phase()
@@ -468,12 +468,12 @@ class GameState:
         self.end_move_votes = [False for _ in self.players]
 
     def process_move(self, player_uid, move):
-        '''
+        """
         Apply the specified move by the specified player is such move is valid.
 
         Raises:
             IllegalMoveException: the specified move by the specified player is an invalid move.
-        '''
+        """
 
         # TODO: add type checks to the tops of methods and shit
 
@@ -522,12 +522,12 @@ class GameState:
         # TODO: don't throw exceptions on illegal moves, just return?
 
     def _apply_put_move(self, player_uid, card):
-        '''
+        """
         Apply the move by the specified player to put the specified card. If another put by the player is not possible,
         end the current 'init' phase.
 
         Note: the move is assumed to be valid and applied unconditionally.
-        '''
+        """
 
         self.player_hands[player_uid].remove(card)
 
@@ -548,11 +548,11 @@ class GameState:
         self._reset_all_end_move_votes()
 
     def _end_init_phase(self):
-        '''
+        """
         End the current 'init' phase and transition into:
         - the corresponding 'follow' phase, if any cards have been put on the table;
         - the next 'init' phase if no cards have been put (i.e. move timer ran out).
-        '''
+        """
 
         if self.phase != 'init':
             raise ValueError("Not in init phase")
@@ -567,9 +567,9 @@ class GameState:
         self._reset_timer()
 
     def _advance_spotlight(self):
-        '''
+        """
         Advances the spotlight to the next player in order, skipping the players that are out of game.
-        '''
+        """
 
         i_next = self._index_of_player(self.spotlight) + 1
         i_next %= len(self.players)
@@ -584,11 +584,11 @@ class GameState:
         self._send_spotlight()
 
     def _apply_defend_move(self, player_uid, card, i_stack):
-        '''
+        """
         Apply the move by the specified player to defend by coverting `i_stack`th stack with `card`.
 
         Note: the move is assumed to be valid and applied unconditionally.
-        '''
+        """
 
         self.player_hands[player_uid].remove(card)
 
@@ -607,13 +607,13 @@ class GameState:
             self._bump_timer()
 
     def _hand_out_cards(self):
-        '''
+        """
         Hand cards out, i.e move the appropriate number of cards (possibly zero) from the top of the leftover deck into
         the hand of each player so that all players have at least 6 cards.
 
         The players are considered in order, starting from the spotlight. If at some point the leftover deck runs out,
         the process is halted.
-        '''
+        """
 
         i_spotlight = self._index_of_player(self.spotlight)
 
@@ -633,11 +633,11 @@ class GameState:
         self._send_remove_from_deck(sum(len(cards) for cards in additional_cards))
 
     def _apply_take_move(self, player_uid):
-        '''
+        """
         Apply take move by the specified player.
 
         Note: the move is assumed to be valid and applied unconditionally.
-        '''
+        """
 
         table_cards = list(self._get_table_cards())
 
@@ -653,11 +653,11 @@ class GameState:
         self._end_follow_phase()
 
     def _end_follow_phase(self):
-        '''
+        """
         End the current 'follow' phase and proceed into the corresponding next 'init' phase.
 
         Note: it is assumed that it is not 'follow' phase and it should end.
-        '''
+        """
 
         self.phase = 'init'
 
@@ -701,25 +701,25 @@ class GameState:
     # Client state update
 
     def _send_update(self, player_uid, msg):
-        '''
+        """
         Update *the specified player* on the delta `msg`
-        '''
+        """
 
         for handler in self._update_handlers:
             handler(player_uid, msg)
 
     def _send_update_to_all(self, msg):
-        '''
+        """
         Update *all players* on the delta `msg`
-        '''
+        """
 
         for uid, name in self.players:
             self._send_update(uid, msg)
 
     def _send_initialize(self, player_uid):
-        '''
+        """
         Update the specified player with the current game state in full
-        '''
+        """
 
         self._send_update(player_uid, {
             'type': 'INITIALIZE GAME',
@@ -733,9 +733,9 @@ class GameState:
         })
 
     def _send_put_on_table(self, card):
-        '''
+        """
         Update *all players* about `card` being put on the table forming a new table stack
-        '''
+        """
 
         self._send_update_to_all({
             'change': 'PUT ON TABLE',
@@ -743,9 +743,9 @@ class GameState:
         })
 
     def _send_phase(self):
-        '''
+        """
         Update *all players* on current phase
-        '''
+        """
 
         self._send_update_to_all({
             'change': 'PHASE',
@@ -753,9 +753,9 @@ class GameState:
         })
 
     def _send_spotlight(self):
-        '''
+        """
         Update *each player* on the current spotlight position, providing its relative index.
-        '''
+        """
 
         for uid, name in self.players:
             self._send_update(uid, {
@@ -764,9 +764,9 @@ class GameState:
             })
 
     def _send_cover_stack(self, i_stack, card):
-        '''
+        """
         Update *all players* on `card` being used to cover `i_stack`th stack
-        '''
+        """
 
         self._send_update_to_all({
             'change': 'PUT ONTO STACK',
@@ -788,12 +788,12 @@ class GameState:
                 })
 
     def _send_add_to_player_hand(self, player_uid, cards):
-        '''
+        """
         Update *each player* of `cards` being added to the specified player's hand.
 
         To the specified player himself, provide the cards. To the other players, provide the number for cards added and
         the corresponding opponent's hand.
-        '''
+        """
 
         for i, (uid, name) in enumerate(self.players):
             if player_uid == uid:
@@ -809,38 +809,38 @@ class GameState:
                 })
 
     def _send_clear_table(self):
-        '''
+        """
         Update *all players* on all the table stacks being removed from the table.
-        '''
+        """
         for uid, name in self.players:
             self._send_update(uid, {
                 'change': 'CLEAR TABLE'
             })
 
     def _send_remove_from_deck(self, num_cards):
-        '''
+        """
         Update *all players* on `num_cards` being removed from the leftover deck.
-        '''
+        """
         self._send_update_to_all({
             'change': 'REMOVE FROM DECK',
             'numCards': num_cards
         })
 
     def _send_add_to_played_deck(self, num_cards):
-        '''
+        """
         Update *all players* on `num_cards` being added to the played deck.
-        '''
+        """
         self._send_update_to_all({
             'change': 'ADD TO PLAYED DECK',
             'numCards': num_cards
         })
 
     def _send_player_out_of_game(self, player_uid):
-        '''
+        """
         Update *each players* on the specified player going out of game (i.e. winning).
 
         To each provide the relative index of the player in their respective views.
-        '''
+        """
 
         for uid, name in self.players:
             self._send_update(uid, {
@@ -849,10 +849,10 @@ class GameState:
             })
 
     def _send_game_end(self, loser_uid, loser_nickname):
-        '''
+        """
         Update *each player* of the game ending and the specified player losing. To each player, provide the loser's
         nickname and whether the player themselves is the loser.
-        '''
+        """
 
         for uid, name in self.players:
             self._send_update(uid, {
