@@ -38,7 +38,7 @@ uiStore.dispatch({
 socket.onmessage = (event) => {
     let action = JSON.parse(event.data);
 
-    console.log("From socket:", action);
+    // console.log("From socket:", action);
 
     uiStore.dispatch(action);
 
@@ -53,33 +53,28 @@ socket.onclose = (e) => {
     });
 };
 
-// TODO: graphically show when the player is out of game himself
+// TODO: proper game end: no reconnects
 
-// TODO: RECONNECTION and session persistence!
+// TODO: graphically show when the player is out of game himself
 
 // TODO: Switch to ' in "symbols" and module names everywhere
 // TODO: rework the state tree field names into something more sensible (after everything is done)
 
-// TODO: persistent data about players by cookie
 // TODO: persistent data about players between server restarts (a db)
 // TODO: persistent data about players by username/password
 
-// TODO: render server address into index.html
-// TODO: auto end move during follow when defending player all out of cards
+// TODO: render server address into index.html ?
 
-// TODO: fix table stack buttons sometimes not disappearing after defend move
 // TODO: naming: stack -> deck in state keys, camelcase in network dict keys, spotlight/actor, etc
+// TODO: a non-random nomenclature of actions, state deltas, moves and ui clicks
 
 // TODO: reconnect in menu
 // TODO: persist game state across sessions
 // TODO: private games by link
 
-// TODO: split JS into ES6 modules (using Babel?)
 // TODO: split server state into more classes
 // TODO: start writing unit tests for all of this
 
 // TODO: ability to withdraw cards
 
-// TODO: switch to binary (think how to do this while maintaining readability)
 // TODO: scale (separate lobby server, multiple game servers)
-

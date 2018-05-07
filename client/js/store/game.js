@@ -3,19 +3,11 @@ import { combineReducers } from "redux";
 // TODO: redo this and other stores in let/const
 // TODO: use default args in all reducers
 
-let fNumPlayers = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
-
+let fNumPlayers = function(state=null, action) {
     return state;
 };
 
-let fCurrentPhase = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
-
+const fCurrentPhase = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'PHASE') {
         return action.phase;
     }
@@ -23,11 +15,7 @@ let fCurrentPhase = function(state, action) {
     return state;
 };
 
-let fCurrentActor = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
-
+const fCurrentActor = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'SPOTLIGHT') {
         console.log("new spotlight", action.iSpotlight);
 
@@ -37,11 +25,7 @@ let fCurrentActor = function(state, action) {
     return state;
 };
 
-let fPlayerHand = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
-
+const fPlayerHand = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'REMOVE FROM PLAYER HAND') {
         var strippedDownState = [];
 
@@ -66,11 +50,7 @@ let fPlayerHand = function(state, action) {
     return state;
 };
 
-let fTableStacks = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
-
+const fTableStacks = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'PUT ON TABLE') {
         var appendedState = state.slice(0);
 
@@ -95,11 +75,7 @@ let fTableStacks = function(state, action) {
     return state;
 };
 
-let fOpponents = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
-
+const fOpponents = (state=null, action) => {
     if(action.type === 'STATE DELTA') {
         if(action.change === 'REMOVE FROM OPPONENT HAND') {
             let newState = state.slice(0);
@@ -127,11 +103,7 @@ let fOpponents = function(state, action) {
     return state;
 };
 
-let fLeftoverStackSize = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
-
+const fLeftoverStackSize = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'REMOVE FROM DECK') {
         return state - action.numCards;
     }
@@ -146,11 +118,8 @@ let fBottomCard = function(state, action) {
     return state;
 };
 
-let fPlayedStackSize = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
 
+const fPlayedStackSize = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'ADD TO PLAYED DECK') {
         return state + action.numCards;
     }
@@ -158,11 +127,7 @@ let fPlayedStackSize = function(state, action) {
     return state;
 };
 
-let fDefendMoveCard = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
-
+const fDefendMoveCard = (state=null, action) => {
     if(action.type === 'DEFEND CLICK') {
         return action.card;
     }
@@ -176,11 +141,7 @@ let fDefendMoveCard = function(state, action) {
     return state;
 };
 
-let fTimer = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
-
+const fTimer = (state=null, action) => {
     if(action.type === 'TIMER TICK' && state !== null) {
         if(state.numSeconds <= 0) {
             clearInterval(state.interval);
@@ -207,11 +168,7 @@ let fTimer = function(state, action) {
     return state;
 };
 
-let fOptedEndMove = function(state, action) {
-    if(state === undefined) {
-        return false;
-    }
-
+const fOptedEndMove = (state=false, action) => {
     if(action.type === 'STATE DELTA') {
         if(action.change === 'PUT ON TABLE' || action.change === 'PUT ONTO STACK' || action.change === 'PHASE') {
             return false;
@@ -224,7 +181,7 @@ let fOptedEndMove = function(state, action) {
     return state;
 };
 
-let fPlayersDisconnected = (state={}, action) => {
+const fPlayersDisconnected = (state={}, action) => {
     if(action.type === 'PLAYER DISCONNECTED') {
         let newState = Object.assign({}, state);
 
@@ -270,11 +227,7 @@ let fInitializedGame = combineReducers({
     playersDisconnected: fPlayersDisconnected
 });
 
-let fGame = function(state, action) {
-    if(state === undefined) {
-        return 'no game'; // TODO: move this into the game state (?) to have a proper reducer
-    }
-
+export const fGame = function(state='no game', action) {
     if(action.type === 'INITIALIZE GAME') {
         return fGame(action.initState, {type: NaN});
     }
@@ -287,5 +240,3 @@ let fGame = function(state, action) {
 
     return state;
 };
-
-export { fGame };

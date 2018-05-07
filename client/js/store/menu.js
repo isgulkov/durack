@@ -1,10 +1,6 @@
 import { combineReducers } from "redux";
 
-let fDisplayed = function(state, action) {
-    if(state === undefined) {
-        return true;
-    }
-
+const fDisplayed = (state=true, action) => {
     if(action.type === 'INITIALIZE GAME') {
         return false;
     }
@@ -15,11 +11,7 @@ let fDisplayed = function(state, action) {
     return state;
 };
 
-let fStatus = function(state, action) {
-    if(state === undefined) {
-        return 'initial';
-    }
-
+const fStatus = (state='initial', action) => {
     if(action.type === 'LOOKING FOR GAME') {
         return 'looking';
     }
@@ -39,11 +31,7 @@ let fStatus = function(state, action) {
     return state;
 };
 
-let fNumLooking = function(state, action) {
-    if(state === undefined) {
-        return NaN;
-    }
-
+const fNumLooking = (state=NaN, action) => {
     if(action.type === 'UPDATE NUM LOOKING FOR GAME') {
         return action.num;
     }
@@ -51,11 +39,7 @@ let fNumLooking = function(state, action) {
     return state;
 };
 
-let fCurrentNickname = function(state, action) {
-    if(state === undefined) {
-        return "—"; // TODO: magic value
-    }
-
+const fCurrentNickname = (state="", action) => {
     if(action.type === 'CONFIRM SET NICKNAME') {
         return action.newNickname;
     }
@@ -63,11 +47,7 @@ let fCurrentNickname = function(state, action) {
     return state;
 };
 
-let fChangingNickname = function(state, action) {
-    if(state === undefined) {
-        return false;
-    }
-
+const fChangingNickname = (state=false, action) => {
     if(action.type === 'CLICK CHANGE NICKNAME') {
         return true;
     }
@@ -78,11 +58,7 @@ let fChangingNickname = function(state, action) {
     return state;
 };
 
-let fEndSummary = function(state, action) {
-    if(state === undefined) {
-        return null;
-    }
-
+const fEndSummary = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
         return {
             'loserNickname': action.loserNickname,
@@ -96,7 +72,7 @@ let fEndSummary = function(state, action) {
     return state;
 };
 
-let fMenu = combineReducers({
+export const fMenu = combineReducers({
     displayed: fDisplayed,
     status: fStatus,
     numLooking: fNumLooking,
@@ -104,5 +80,3 @@ let fMenu = combineReducers({
     changingNickname: fChangingNickname,
     endSummary: fEndSummary
 });
-
-export { fMenu };
