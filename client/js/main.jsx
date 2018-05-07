@@ -52,8 +52,7 @@ socket.onclose = (e) => {
     });
 };
 
-// TODO: draw empty leftover properly
-// TODO: graphically show when the player is out of game
+// TODO: graphically show when the player is out of game himself
 
 // TODO: auto end move when opponent has no cards left
 

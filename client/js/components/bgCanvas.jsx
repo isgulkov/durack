@@ -3,9 +3,7 @@ import React from "react";
 import { getOpponentHandCenters } from "./utility/gameField";
 
 class BgCanvas extends React.Component {
-    componentDidUpdate() {
-        // console.log("Will re-draw BgCanvas with new state", this.props);
-
+    drawContents() {
         let canvas = this.refs.canvas;
         let ctx = canvas.getContext('2d');
 
@@ -55,6 +53,14 @@ class BgCanvas extends React.Component {
 
             ctx.restore();
         }
+    }
+
+    componentDidUpdate() {
+        this.drawContents();
+    }
+
+    componentDidMount() {
+        this.drawContents();
     }
 
     render() {
