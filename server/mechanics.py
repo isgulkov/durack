@@ -184,6 +184,10 @@ class GameState:
         players[0:] = players[i_start:] + players[:i_start]
 
     def start(self):
+        """
+        Start game -- send players their initial state views and start the move timer
+        """
+
         for uid, name in self.players:
             self._send_initialize(uid)
 
@@ -994,6 +998,11 @@ class GameState:
         })
 
     def _send_remove_from_hand(self, player_uid, card):
+        """
+        Update *each player* on the specified card being removed from the specified player's hand. The opponents are
+        only provided with the player's relative index.
+        """
+
         for i, (uid, name) in enumerate(self.players):
             if player_uid == uid:
                 self._send_update(uid, {

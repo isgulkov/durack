@@ -94,6 +94,25 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         if identity in self.disconnect_timers:
             self.handle_reconnect(identity)
 
+    def on_close(self):
+        identity = self._identity
+
+        if identity in self.connection_with:
+            del self.connection_with[identity]
+
+        if identity in self.matchmaking_pool:
+            self.remove_from_matchmaking_pool(identity)
+        elif identity in self.running_games:
+            game = self.running_games[identity]
+
+            RECONNECT_TIME = 5  # TODO: ~30
+
+            game.handle_disconnect(identity, RECONNECT_TIME)
+
+            disconnect_timer = self.get_ioloop().call_later(RECONNECT_TIME, lambda: game.handle_disconnect_timeout(identity))
+
+            self.disconnect_timers[identity] = disconnect_timer
+
     @staticmethod
     def get_ioloop():
         return tornado.ioloop.IOLoop.current()
@@ -118,25 +137,6 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
         del cls.running_games[uid]
         del cls.disconnect_timers[uid]
-
-    def on_close(self):
-        identity = self._identity
-
-        if identity in self.connection_with:
-            del self.connection_with[identity]
-
-        if identity in self.matchmaking_pool:
-            self.remove_from_matchmaking_pool(identity)
-        elif identity in self.running_games:
-            game = self.running_games[identity]
-
-            RECONNECT_TIME = 5  # TODO: ~30
-
-            game.handle_disconnect(identity, RECONNECT_TIME)
-
-            disconnect_timer = self.get_ioloop().call_later(RECONNECT_TIME, lambda: game.handle_disconnect_timeout(identity))
-
-            self.disconnect_timers[identity] = disconnect_timer
 
     # Matchmaking
 

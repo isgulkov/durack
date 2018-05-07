@@ -39,6 +39,8 @@ uiStore.dispatch({
 });
 
 
+// TODO: auto-take when unbeatable and no more puts
+
 // TODO: a more interesting summary
 
 // TODO: initialize state right on open
@@ -47,19 +49,17 @@ uiStore.dispatch({
 // TODO: graphically show when the player is out of game himself
 
 // TODO: Switch to ' in "symbols" and module names everywhere
-// TODO: rework the state tree field names into something more sensible (after everything is done)
 
 // TODO: persistent data about players between server restarts (a db)
 // TODO: persistent data about players by username/password
 
-// TODO: render server address into index.html ?
-
-// TODO: naming: camelcase in network dict keys, spotlight/actor, etc
-// TODO: a non-random nomenclature of actions, state deltas, moves and ui clicks
-
 // TODO: leave game from in-game menu
 
-// TODO: reconnect in menu
+// TODO: render server address into index.html ?
+
+// TODO: a non-random nomenclature of actions, state deltas, moves and ui clicks
+// TODO: rework the state tree field names
+
 // TODO: persist game state across sessions
 // TODO: private games by link
 

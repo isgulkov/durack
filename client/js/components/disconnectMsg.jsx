@@ -10,14 +10,17 @@ class DisconnectMsg extends React.Component {
             'width': ' 100%',
 
             'background': 'red',
-            'color': 'white'
+            'color': 'white',
+
+            'textAlign': 'center',
+            'fontSize': '16px'
         }
     }
 
     render() {
         return (
             <div style={this.getStyle()}>
-                Потеряно соеднинение с сервером
+                Потеряно соеднинение с сервером, выполняется попытка восстановления связи...
             </div>
         )
     }
