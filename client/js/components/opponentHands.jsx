@@ -58,8 +58,6 @@ class OpponentHand extends React.Component {
             }
         }
         else {
-            // TODO: do more beautifully
-
             hand.push(
                 <div style={{
                     'position': 'absolute',
@@ -68,6 +66,7 @@ class OpponentHand extends React.Component {
 
                     'width': 50,
                     'height': 50,
+                    'borderRadius': '50%',
 
                     'background': 'rgba(127, 127, 127, 0.3)'
                 }} key={1337} />
