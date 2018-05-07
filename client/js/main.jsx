@@ -37,19 +37,25 @@ uiStore.dispatch({
 socket.onmessage = (event) => {
     let action = JSON.parse(event.data);
 
-    console.log("From socket:", action);
+    // console.log("From socket:", action);
 
     uiStore.dispatch(action);
 
-    console.log("Here's state after update:", uiStore.getState());
+    // console.log("Here's state after update:", uiStore.getState());
 };
 
 socket.onclose = (e) => {
-    console.log("SOCKET CLOSED", e);
+    console.log("Socket closed for some fucking reason", e);
+
+    uiStore.dispatch({
+        type: 'SOCKET CLOSED'
+    });
 };
 
 // TODO: register vote for "end move" when "End move" is pressed by the init player to end init
 // TODO: deregister vote for "end move" only when new move ops arise?
+
+// TODO: don't show "Take" where every stack is beaten
 
 // TODO: move timer
 // TODO: end game summary

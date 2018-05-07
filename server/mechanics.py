@@ -556,18 +556,20 @@ class GameState:
     # Representation
 
     def as_dict(self):
+        print self.table_stacks
+
         return {
             'players': self.players,
 
             'currentPhase': self.phase,
             'currentActor': self._index_of_player(self.spotlight),
 
-            'playerHands': [[card.as_dict() for card in hand] for hand in self.player_hands],
+            'playerHands': {uid: [card.as_dict() for card in hand] for uid, hand in self.player_hands.iteritems()},
 
             'tableStacks': [
                 {
-                    'top': top.as_dict(),
-                    'bottom': bottom.as_dict() if bottom is not None else None
+                    'top': top.as_dict() if hasattr(top, 'as_dict') else top,
+                    'bottom': bottom.as_dict() if hasattr(bottom, 'as_dict') else bottom
                 } for (top, bottom) in self.table_stacks
             ],
 

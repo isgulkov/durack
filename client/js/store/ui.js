@@ -11,6 +11,9 @@ let fSocket = (state, action) => {
     if(action.type === 'SOCKET READY') {
         return action.socket;
     }
+    else if(action.type === 'SOCKET CLOSED') {
+        return null;
+    }
 
     return state;
 };

@@ -38,7 +38,8 @@ class _CardsOnTable extends React.Component {
             else if(this.props.isDefendMove) {
                 buttons.push(
                     <Highlight x={bottomCardX} y={bottomCardY} width={CARD_WIDTH} height={CARD_HEIGHT}
-                               bgColor={'black'} onClick={() => this.props.sendTableStackClick(i)} />
+                               bgColor={'black'} onClick={() => this.props.sendTableStackClick(i)}
+                               key={200 + i}/>
                 );
             }
         }

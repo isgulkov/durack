@@ -46,7 +46,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     game_states = {}
     timers = {}
 
-    MIN_NUM_PLAYERS = 3 # TODO: Apply some logic to it
+    MIN_NUM_PLAYERS = 2 # TODO: Apply some logic to it
 
     def get_compression_options(self):
         # Non-None enables compression with default options.
@@ -76,7 +76,11 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             if 'type' not in update:
                 update['type'] = 'STATE DELTA'
 
-            connection.write_message(update)
+            try:
+                connection.write_message(update)
+            except tornado.websocket.WebSocketClosedError as e:
+                print e  # TODO: handle better
+                raise e
 
         new_state.add_update_handler(send_state_update)
         new_state.add_set_timer_callback(lambda delay: cls.set_timer(new_state, delay))
@@ -160,7 +164,11 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 game.process_move(self, msg)
             except IllegalMoveException as e:
                 logging.warning("Player %s issued an illegal move: %s" % (self, e.message, ))
+
                 logging.warning(game.as_dict())
+
+        if self in self.game_states:
+            print self.game_states[self].as_dict()
 
     def find_game(self):
         self.matchmaking_pool.add(self)

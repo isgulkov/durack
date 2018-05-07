@@ -20,6 +20,10 @@ class Game extends React.Component {
 
         let gameState = this.props.state;
 
+        if(gameState === 'no game') {
+            return null;
+        }
+
         return (
             <div id="canvas_container">
                 <div id="main_canvas"

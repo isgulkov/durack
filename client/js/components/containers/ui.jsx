@@ -4,6 +4,7 @@ import { connect } from "react-redux";
 
 import { Menu } from "../menu";
 import { Game } from "../game";
+import { DisconnectMsg } from "../disconnectMsg";
 
 class _GameUi extends React.Component {
     render() {
@@ -11,20 +12,13 @@ class _GameUi extends React.Component {
 
         let currentState = this.props.state;
 
-        if(currentState.game !== "no game") {
-            let gameState = currentState.game;
-
-            return (
-                <Game state={gameState} />
-            );
-        }
-        else {
-            let menuState = currentState.menu;
-
-            return (
-                <Menu state={menuState} />
-            )
-        }
+        return (
+            <div>
+                <Game state={currentState.game} />
+                <Menu state={currentState.menu} />
+                { currentState.socket === null ? <DisconnectMsg /> : null }
+            </div>
+        );
     }
 }
 
