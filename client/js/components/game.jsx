@@ -28,7 +28,8 @@ class Game extends React.Component {
             <div style={{
                 'textAlign': 'center'
             }}>
-                <div style={{
+                <div className='children-default-cursor'
+                     style={{
                          'width': TABLE_WIDTH,
                          'height': TABLE_HEIGHT,
                          'position': 'relative',

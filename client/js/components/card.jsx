@@ -23,7 +23,9 @@ class Card extends React.Component {
 
     render() {
         return (
-            <div style={this.getStyle()} onClick={() => this.props.onClick()} />
+            <div className={this.props.onClick ? 'clickable' : ''}
+                 style={this.getStyle()}
+                 onClick={() => this.props.onClick()} />
         );
     }
 }

@@ -30,7 +30,7 @@ class Highlight extends React.Component {
 
     render() {
         return (
-            <div style={this.getStyle()} onClick={() => this.handleClick()}>
+            <div className='clickable' style={this.getStyle()} onClick={() => this.handleClick()}>
                 {this.props.text || ""}
             </div>
         )
