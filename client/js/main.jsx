@@ -57,8 +57,15 @@ socket.onclose = (e) => {
 
 // TODO: don't show "Take" where every stack is beaten
 
+// TODO: game end and end game summary
+
 // TODO: move timer
-// TODO: end game summary
+
+// TODO: RECONNECTION and session persistence!
+
+// TODO: persistent data about players by cookie
+// TODO: persistent data about players between server restarts (a db)
+// TODO: persistent data about players by username/password
 
 // TODO: render server address into index.html
 // TODO: auto end move during follow when defending player all out of cards

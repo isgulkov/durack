@@ -104,7 +104,7 @@ class GameState:
 
         self.bottom_card = bottom_card
 
-        self.end_move_votes = [False for _ in players]
+        self.end_move_votes = [False for _ in players]  # TODO: strictly define when reset
 
         self._update_handlers = set()
 
@@ -189,6 +189,14 @@ class GameState:
     def timeout(self):
         pass
 
+    def _opt_end_move(self, i_player):
+        if not self.end_move_votes[i_player]:
+            self._send_update(self.players[i_player][0], {
+                'change': 'OPTED TO END MOVE'
+            })
+
+        self.end_move_votes[i_player] = True
+
     def process_move(self, player_uid, move):
         # TODO: extract methods related to moves into individual Move classes, methods related to update notifications
         # TODO: into separate "Notifier" class, method related to player state into separate Player class.
@@ -198,15 +206,17 @@ class GameState:
             if not self._apply_put_move(player_uid, Card(**move['card'])):
                 raise IllegalMoveException("Illegal put move")  # TODO: add details
         elif move['action'] == 'MOVE END':
+            i_player = self._index_of_player(player_uid)
+
             if self.phase == 'init' and self.spotlight == player_uid and len(self.table_stacks) != 0:
                 self._end_init_phase()
-            elif self.phase == 'follow' and self.spotlight != player_uid:
-                i_player = self._index_of_player(player_uid)
 
+                self._opt_end_move(i_player)
+            elif self.phase == 'follow' and self.spotlight != player_uid:
                 if self.end_move_votes[i_player]:
                     logging.warn("Player %s voted to end move even though he has already" % self)
 
-                self.end_move_votes[i_player] = True
+                self._opt_end_move(i_player)
 
                 if self._follow_phase_ended():
                     self._end_follow_phase()

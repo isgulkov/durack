@@ -211,9 +211,9 @@ let fOptedEndMove = function(state, action) {
         if(action.change === 'PUT ON TABLE' || action.change === 'PUT ONTO STACK' || action.change === 'PHASE') {
             return false;
         }
-    }
-    else if(action.type === 'OPT TO END MOVE') {
-        return true;
+        else if(action.change === 'OPTED TO END MOVE') {
+            return true;
+        }
     }
 
     return state;
