@@ -1,5 +1,5 @@
 
-let sendActionsMiddleware = (socket) => (store => next => action => {
+let sendActionsMiddleware = store => next => action => {
     let msg = null;
 
     if(action.type === 'SEND FIND GAME') {
@@ -73,10 +73,14 @@ let sendActionsMiddleware = (socket) => (store => next => action => {
     if(msg !== null) {
         console.log("sending", msg);
 
-        socket.send(JSON.stringify(msg));
+        const socket = store.getState().socket;
+
+        if(socket !== null) {
+            socket.send(JSON.stringify(msg))
+        }
     }
 
     next(action);
-});
+};
 
 export { sendActionsMiddleware };

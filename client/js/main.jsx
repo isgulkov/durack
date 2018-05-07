@@ -1,4 +1,4 @@
-import { createStore, applyMiddleware } from 'redux'; // React-redux
+import { createStore, applyMiddleware } from 'redux';
 import React from "react";
 import ReactDOM from "react-dom";
 import { Provider } from "react-redux";
@@ -11,13 +11,18 @@ import { sendActionsMiddleware } from "./middleware/sendActions";
 import { processTimerActions } from "./middleware/processTimerActions";
 import { processPlayerIdentity } from "./middleware/processPlayerIdentity";
 import { filterWhenFrozen } from "./middleware/filterWhenFrozen";
+import { socketMaintenance } from "./middleware/socketMaintenance";
 
-// TODO: rewrite in socket.io or just implement reconnection (both sides)
-let socket = new WebSocket('ws://localhost:8888/game');
 
 let uiStore = createStore(
     fUiState,
-    applyMiddleware(filterWhenFrozen, sendActionsMiddleware(socket), processTimerActions, processPlayerIdentity)
+    applyMiddleware(
+        socketMaintenance,
+        filterWhenFrozen,
+        sendActionsMiddleware,
+        processTimerActions,
+        processPlayerIdentity
+    )
 );
 
 // uiStore.subscribe(() => console.log("state", uiStore.getState()));
@@ -30,29 +35,9 @@ ReactDOM.render(
 );
 
 uiStore.dispatch({
-    type: 'SOCKET READY',
-    socket: socket
+    type: 'INIT SOCKET'
 });
 
-socket.onmessage = (event) => {
-    let action = JSON.parse(event.data);
-
-    // console.log("From socket:", action);
-
-    uiStore.dispatch(action);
-
-    // console.log("Here's state after update:", uiStore.getState());
-};
-
-socket.onclose = (e) => {
-    console.log("Socket closed for some fucking reason", e);
-
-    uiStore.dispatch({
-        type: 'SOCKET CLOSED'
-    });
-};
-
-// TODO: actual reconnect after socket is closed
 
 // TODO: a more interesting summary
 
