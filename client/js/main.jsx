@@ -41,7 +41,7 @@ uiStore.dispatch({
 
 // TODO: auto-take when unbeatable and no more puts
 
-// TODO: a more interesting summary
+// TODO: a more interesting summary and individual player stats
 
 // TODO: better random nicknames
 

@@ -6,8 +6,6 @@ from tinydb import TinyDB, Query
 class PlayerIdentity(object):
     db = TinyDB('db.json')
 
-    currently_loaded = set()
-
     def __init__(self, uid, nickname, num_played, num_won, is_new=False):
         self._uid = uid
         self._nickname = nickname
@@ -16,8 +14,6 @@ class PlayerIdentity(object):
 
         if is_new:
             self.db.insert(self.as_dict())
-
-        self.currently_loaded.add(uid)
 
     def __eq__(self, other):
         return self._uid == other._uid
@@ -34,9 +30,6 @@ class PlayerIdentity(object):
             self._nickname.encode('utf-8'),
             self._num_played, self._num_won
         )
-
-    def __del__(self):
-        self.currently_loaded.remove(self._uid)
 
     def _dump(self):
         self.db.update(self.as_dict(), Query().uid == self.uid)
@@ -80,10 +73,6 @@ class PlayerIdentity(object):
 
     @classmethod
     def from_uid(cls, uid):
-        if uid in cls.currently_loaded:
-            # Don't load one identity twice, i.e. for two different players
-            return None
-
         d = cls.db.get(Query().uid == uid)
 
         if d is not None:
