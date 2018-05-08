@@ -140,6 +140,8 @@ const fDefendMoveCard = (state=null, action) => {
 
 const fTimer = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
+        clearInterval(state.interval);
+
         return null;
     }
     if(action.type === 'TIMER TICK' && state !== null) {
