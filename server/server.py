@@ -12,7 +12,8 @@ from tornado.options import define, options
 
 define("port", default=8888, help="run on the given port", type=int)
 
-from mechanics import GameState, IllegalMoveException
+from player_state import PlayerState
+from game_state import GameState, IllegalMoveException
 
 from player_identity import PlayerIdentity
 
@@ -47,9 +48,23 @@ class IndexHandler(tornado.web.RequestHandler):
 
 
 class GameSocketHandler(tornado.websocket.WebSocketHandler):
+    logger = logging.getLogger('durack/server')
+
+    from sys import stdout
+
+    logger.setLevel(logging.DEBUG)
+
+    sh = logging.StreamHandler(stdout)
+    sh.setLevel(logging.DEBUG)
+
+    sh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
+    logger.addHandler(sh)
+
     matchmaking_pool = set()
 
     running_games = {}
+    player_states = {}
 
     timers = {}
     timer_deadlines = {}
@@ -60,7 +75,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     disconnect_timers = {}
 
-    MIN_NUM_PLAYERS = 2 # TODO: Apply some logic to it
+    MIN_NUM_PLAYERS = 2  # TODO: Apply some logic to it
 
     def check_origin(self, origin):
         # TODO: serve client page through Tornado so this can be removed
@@ -71,13 +86,13 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         return {}
 
     @classmethod
-    def add_connection_with(cls, identity, connection):
-        if identity not in cls.connection_with:
-            cls.connection_with[identity] = set()
+    def add_connection_with(cls, player, connection):
+        if player not in cls.connection_with:
+            cls.connection_with[player] = set()
 
-        cls.connection_with[identity].add(connection)
+        cls.connection_with[player].add(connection)
 
-        print identity.nickname, len(cls.connection_with[identity]), [str(c) for c in cls.connection_with[identity]]
+        print player.nickname, len(cls.connection_with[player]), [str(c) for c in cls.connection_with[player]]
 
     def set_uid_cookie(self, uid):
         self.write_message(json.dumps({
@@ -88,31 +103,34 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     def open(self):
         s_uid = self.get_secure_cookie('player-uid')
 
-        identity = None
+        player = None
 
         if s_uid is not None:
-            identity = PlayerIdentity.from_uid(s_uid)
+            self.logger.debug("New connection, uid cookie is set.")
 
-        if identity is None:
-            identity = PlayerIdentity.create_new()
+            player = PlayerIdentity.from_uid(s_uid)
 
-            self.set_uid_cookie(identity.uid)
+        if player is None:
+            self.logger.debug("No uid cookie or unknown one. Will create new identity.")
 
-        self.add_connection_with(identity, self)
+            player = PlayerIdentity.create_new()
 
-        self._identity = identity
+            self.set_uid_cookie(player.uid)
 
-        self.send_state_update_to_player(identity, {
-            'type': 'CONFIRM SET NICKNAME',
-            'newNickname': identity.nickname
-        })
+        self.add_connection_with(player, self)
 
-        if identity in self.disconnect_timers:
-            self.handle_reconnect(identity)
-        else:
-            self.send_state_update_to_player(identity, {
-                'type': 'QUIT FROM GAME'
-            })
+        self._identity = player  # old
+        self._player = player  # new
+
+        if player not in self.player_states:
+            player_state = PlayerState.get_initial(player)
+
+            self.logger.info("New player online, init their state with %s" % player_state.as_init_action())
+
+            self.player_states[player] = player_state
+
+        if player in self.disconnect_timers:
+            self.handle_reconnect(player)  # TODO: later
 
     def on_close(self):
         identity = self._identity
@@ -157,46 +175,38 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def update_num_looking_for_game(cls):
-        for p in cls.matchmaking_pool:
-            cls.send_state_update_to_player(p, {
-                'type': 'UPDATE NUM LOOKING FOR GAME',
-                'num': len(cls.matchmaking_pool)
+        for player in cls.matchmaking_pool:
+            cls.send_msg_to_player(player, {
+                'type': 'update-looking-for-game(num)',
+                'numLooking': len(cls.matchmaking_pool)
             })
 
     @classmethod
-    def remove_from_matchmaking_pool(cls, p):
-        if p in cls.matchmaking_pool:
-            cls.matchmaking_pool.remove(p)
+    def remove_from_matchmaking_pool(cls, player):
+        if player in cls.matchmaking_pool:
+            cls.matchmaking_pool.remove(player)
 
             cls.update_num_looking_for_game()
 
-    def add_to_matchmaking_pool(self):
-        identity = self._identity
+    @classmethod
+    def add_to_matchmaking_pool(cls, player):
+        cls.logger.info("Will add %s to the matchmaking pool" % player)
 
-        if identity in self.matchmaking_pool:
-            return
+        cls.matchmaking_pool.add(player)
 
-        if identity in self.running_games:
-            return
+        cls.update_num_looking_for_game()
 
-        self.matchmaking_pool.add(identity)
+        cls.logger.info("Pool is now of size %d: %s" % (len(cls.matchmaking_pool), cls.matchmaking_pool))
 
-        self.write_message(json.dumps({
-            'type': 'LOOKING FOR GAME'
-        }))
-
-        self.update_num_looking_for_game()
-
-        print len(self.matchmaking_pool)
-        print self.matchmaking_pool
-
-        if len(self.matchmaking_pool) >= self.MIN_NUM_PLAYERS:
+        if len(cls.matchmaking_pool) >= cls.MIN_NUM_PLAYERS:
             new_players = []
 
-            while len(new_players) < 6 and len(self.matchmaking_pool) != 0:
-                new_players.append(self.matchmaking_pool.pop())
+            while len(new_players) < 6 and len(cls.matchmaking_pool) != 0:
+                new_players.append(cls.matchmaking_pool.pop())
 
-            self.initialize_game(new_players)
+            cls.initialize_game(new_players)
+
+            cls.logger.info("Following %d players matched: %s" % (len(new_players), new_players))
 
     def set_nickname(self, nickname):
         if not (0 < len(nickname) <= 64):
@@ -210,53 +220,78 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         }))
 
     @classmethod
-    def remove_players_from_games(cls, identities):
-        for p in identities:
-            cls.remove_player_from_game(p)
+    def remove_players_from_game(cls, game, players):
+        for player in players:
+            cls.remove_player_from_game(game, player)
 
     @classmethod
-    def remove_player_from_game(cls, identity):
-        logging.warn("Remove %s from games" % identity)
+    def remove_player_from_game(cls, game, player):
+        if player in cls.running_games and cls.running_games[player] == game:
+            del cls.running_games[player]
 
-        if identity in cls.running_games:
-            logging.warn("Removed")
+            # TODO: determine if the player is still even online?
 
-            del cls.running_games[identity]
+            cls.player_states[player] = PlayerState.get_initial(player)
 
-        cls.send_state_update_to_player(identity, {
-            'type': 'QUIT FROM GAME'
-        }, call_handler_on_disconnect=False)
+            cls.send_msg_to_player(player, cls.player_states[player].as_init_action())
 
-    def on_message(self, message):
-        msg = json.loads(message)
+    def on_message(self, msg):
+        self.logger.info("Got message %s" % msg)
 
-        if msg['action'] == 'FIND GAME':
-            self.add_to_matchmaking_pool()
-        elif msg['action'] == 'CANCEL FIND GAME':
-            self.remove_from_matchmaking_pool(self._identity)
+        msg = json.loads(msg)
 
-            self.write_message(json.dumps({
-                'type': 'STOPPED LOOKING FOR GAME'
-            }))
-        elif msg['action'] == 'SET NICKNAME':
-            self.set_nickname(msg['newNickname'])
-        elif msg['action'][:4] == 'MOVE':
-            identity = self._identity
+        if 'kind' in msg:  # new
+            player = self._player
 
-            if identity not in self.running_games:
-                logging.warning("Player %s issued a move but doesn't participate in known games")
-                return
+            if msg['kind'] == 'request-init':
+                self.logger.info("Got request for init form socket %s" % self)
 
-            game = self.running_games[identity]
+                self.send_msg_to_player(player, self.player_states[player].as_init_action())
+            elif msg['kind'] == 'act-looking-for-game(start)':
+                if not self.player_states[player].is_initial():
+                    self.logger.warn("Player %s is in %s, should be in initial" % (player, self.player_states[player].as_short_str() ))
+                    return
 
-            try:
-                game.process_move(identity, msg)
-            except IllegalMoveException as e:
-                logging.warning("Player %s issued an illegal move: %s" % (self, repr(e), ))
+                self.player_states[player] = PlayerState.get_looking_for_game(player, self.matchmaking_pool)
 
-                logging.warning(game.as_dict())
-        elif msg['action'] == 'FINISH GAME':
-            self.remove_player_from_game(self._identity)
+                # TODO: transition from initial to lfg instead of init into lfg!
+                self.send_msg_to_player(player, self.player_states[player].as_init_action())
+
+                self.add_to_matchmaking_pool(player)
+            elif msg['kind'] == 'act-looking-for-game(stop)':
+                if not self.player_states[player].is_looking_for_game():
+                    self.logger.warn("Player %s isn't looking for game" % (player,))
+                    return
+
+                self.player_states[player] = PlayerState.get_initial(player)
+
+                self.send_msg_to_player(player, self.player_states[player].as_init_action())
+
+                self.remove_from_matchmaking_pool(player)
+            elif msg['kind'] == 'act-finish-game':
+                if not self.player_states[player].is_after_game():
+                    self.logger.warn("Player %s isn't in a game that ended" % (player,))
+                    return
+
+                self.remove_player_from_game(self.player_states[player].get_game(), player)
+        elif 'action' in msg:  # old
+            if msg['action'] == 'SET NICKNAME':
+                self.set_nickname(msg['newNickname'])
+            elif msg['action'][:4] == 'MOVE':
+                identity = self._identity
+
+                if identity not in self.running_games:
+                    logging.warning("Player %s issued a move but doesn't participate in known games")
+                    return
+
+                game = self.running_games[identity]
+
+                try:
+                    game.process_move(identity, msg)
+                except IllegalMoveException as e:
+                    logging.warning("Player %s issued an illegal move: %s" % (self, repr(e), ))
+
+                    logging.warning(game.as_dict())
 
     @classmethod
     def put_in_queue_for(cls, identity, update):
@@ -283,45 +318,53 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 return c
 
     @classmethod
-    def send_state_update_to_player(cls, identity, update, call_handler_on_disconnect=True):
-        if identity in cls.disconnect_timers or identity not in cls.connection_with:
-            cls.put_in_queue_for(identity, update)
+    def send_msg_to_player(cls, player, msg, call_handler_on_disconnect=True):
+        cls.logger.debug("Try to send to %s message %s" % (player, msg))
+
+        if player in cls.disconnect_timers or player not in cls.connection_with:
+            cls.logger.warn("No connection with for %s" % player)
+            # cls.put_in_queue_for(player, msg)
             return
 
-        connection = cls.get_working_connection_with(identity)
+        connection = cls.get_working_connection_with(player)
 
         if connection is None:
-            print "No connection to", identity.nickname
+            cls.logger.warn("No good connection for %s" % player)
             return
 
-        if 'type' not in update:
-            update['type'] = 'STATE DELTA'
+        if 'type' not in msg:
+            msg['type'] = 'STATE DELTA'
 
         try:
-            connection.write_message(json.dumps(update))
+            connection.write_message(msg)
         except tornado.websocket.WebSocketClosedError:
             if call_handler_on_disconnect:
-                cls.handle_disconnect(identity)
+                cls.handle_disconnect(player)
 
     @classmethod
-    def handle_game_end(cls, game, identities):
-        for p in identities:
-            if p == game.end_summary['loser_uid']:
+    def handle_game_end(cls, game, players):
+        for p in players:
+            loser = game.end_summary['loser']
+
+            if loser is not None and p == loser:
                 p.count_loss()
             elif p in game.order_disconnected:
                 p.count_leave()
             elif p in game.order_won:
                 p.count_win()
 
-        cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_games(identities))
+            cls.player_states[p] = PlayerState.get_after_game(p, game)
+
+            cls.send_msg_to_player(p, cls.player_states[p].as_init_action())
+
+        cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_games(game, players))
 
     @classmethod
-    def initialize_game(cls, identities):
-        new_state = GameState.create_random([(p, p.nickname) for p in identities])
+    def initialize_game(cls, players):
+        new_state = GameState.create_random([(player, player.nickname) for player in players])
 
-        new_state.add_update_handler(lambda p, msg: cls.send_state_update_to_player(p, msg))
+        new_state.add_update_handler(lambda p, msg: cls.send_msg_to_player(p, msg))
 
-        # TODO: refactor into, like, one object
         new_state.update_reset_timer_callback(lambda delay: cls.reset_timer(new_state, delay))
         new_state.update_bump_timer_callback(lambda delay: cls.bump_timer(new_state, delay))
         new_state.update_pause_timer_callback(lambda: cls.pause_timer(new_state))
@@ -331,8 +374,12 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             lambda identities: cls.handle_game_end(new_state, identities)
         )
 
-        for p in identities:
-            cls.running_games[p] = new_state
+        for player in players:
+            cls.running_games[player] = new_state
+
+            cls.player_states[player] = PlayerState.get_in_game(player, new_state)
+
+            # cls.send_msg_to_player(player, cls.player_states[player].as_init_action())
 
         new_state.start()
 

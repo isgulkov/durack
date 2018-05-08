@@ -104,6 +104,10 @@ class Card:
 
 
 class GameState:
+    """
+    Represents the collective state of a game between several players.
+    """
+
     # Creation and initialization
 
     def __init__(self, players, player_hands, table_stacks, leftover_deck, played_deck, bottom_card):
@@ -565,7 +569,7 @@ class GameState:
         Return whether the game should be declared finished at this point
         """
 
-        return sum(1 for uid, name in self.players if self.in_game[uid]) == 1
+        return sum(1 for uid, name in self.players if self.in_game[uid]) <= 1
 
     def _is_frozen(self):
         return self.frozen
@@ -866,22 +870,20 @@ class GameState:
         Note: the game is assumed to be in the state where it should be declared finished, with only one player left in
         """
 
-        loser_uid = None
-        loser_nickname = None
+        loser = None
 
-        for uid, name in self.players:
-            if self.in_game[uid]:
-                loser_uid, loser_nickname = uid, name
+        for player, name in self.players:
+            if self.in_game[player]:
+                loser, loser_nickname = player, name
                 break
 
         self.end_summary = {
-            'loser_uid': loser_uid,
-            'loser_nickname': loser_nickname
+            'loser': loser
         }
 
-        self._end_game_callback([uid for uid, name in self.players])
-
         self._send_game_end()
+
+        self._end_game_callback([player for player, name in self.players])
 
     def _freeze(self):
         """
@@ -966,7 +968,7 @@ class GameState:
 
         self._send_update(player_uid, {
             'type': 'INITIALIZE GAME',
-            'initState': self.as_dict_for_player(player_uid)
+            'game': self.as_dict_for_player(player_uid)
         })
 
     def _send_reset_timer(self, new_delay):
@@ -1099,27 +1101,40 @@ class GameState:
             })
 
     def _send_game_end(self):
-        """
-        Update *each player* of the game ending and the specified player losing. To each player, provide the loser's
-        nickname and whether the player themselves is the loser.
-
-        Note: the game is assumed to have ended and therefore `end_summary` field populated.
-        """
-
-        for player_uid, name in self.players:
-            self._send_update(player_uid, {
-                'change': 'GAME ENDED',
-                'loserNickname': self.end_summary['loser_nickname'],
-                'loserIsYou': self.end_summary['loser_uid'] == player_uid,
-                'orderWon':
-                    [self.players[self._index_of_player(uid)][1] for uid in self.order_won],
-                'iYou':
-                    self.order_won.index(player_uid) if player_uid in self.order_won else None,
-                'orderDisconnected':
-                    [self.players[self._index_of_player(uid)][1] for uid in self.order_disconnected]
-            })
+        self._send_update_to_all({
+            'change': 'GAME ENDED'
+        })
 
     # Representation
+
+    def get_broader_end_summary(self, player):
+        """
+        Return a broader end game summary for the specified player's end game menu screen.
+        """
+
+        loser = self.end_summary['loser']
+
+        print
+        print loser, player, player == loser
+        print
+
+        if loser is None:
+            loser_nickname = None
+            loser_is_you = False
+        else:
+            loser_nickname = self.players[self._index_of_player(loser)][1]
+            loser_is_you = player == loser
+
+        return {
+            'loserNickname': loser_nickname,
+            'loserIsYou': loser_is_you,
+            'orderWon':
+                [self.players[self._index_of_player(uid)][1] for uid in self.order_won],
+            'iYou':
+                self.order_won.index(player) if player in self.order_won else None,
+            'orderDisconnected':
+                [self.players[self._index_of_player(uid)][1] for uid in self.order_disconnected]
+        }
 
     def as_dict(self):
         return {

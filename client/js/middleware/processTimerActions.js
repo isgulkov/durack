@@ -23,9 +23,9 @@ export const processTimerActions = (store => next => action => {
     else if(action.type === 'PLAYER DISCONNECTED') {
         action.interval = createDisconnectTickInteval(store, action.iPlayer)
     }
-    else if(action.type === 'INITIALIZE GAME') {
+    else if(action.type === 'init-player(in-game)' || action.type === 'INITIALIZE GAME') {
         // Restore the `setInterval`s on an initState
-        const moveTimer = action.initState.timer;
+        const moveTimer = action.game.timer;
 
         if(moveTimer !== undefined) {
             clearInterval(moveTimer.interval);

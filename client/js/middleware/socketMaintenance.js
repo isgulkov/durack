@@ -7,6 +7,12 @@ const createAndDispatchSocket = (uiStore) => {
             type: 'SOCKET READY',
             socket: socket
         });
+
+        if(!uiStore.getState().isInitialized) {
+            socket.send(JSON.stringify({
+                kind: 'request-init'
+            }));
+        }
     };
 
     socket.onclose = (e) => {
