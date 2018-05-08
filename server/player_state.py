@@ -7,7 +7,7 @@ class PlayerState:
     Represents the state of a particular player with respect to the game UI.
     """
 
-    Initial, LookingForGame, InGame = range(3)
+    Initial, LookingForGame, InGame, AfterGame = range(4)
 
     def __init__(self, player, root, **kwargs):
         self.player = player
@@ -35,6 +35,10 @@ class PlayerState:
     def get_in_game(cls, player, game_state):
         return PlayerState(player, cls.InGame, game=game_state)
 
+    @classmethod
+    def get_after_game(cls, player, game_state):
+        return PlayerState(player, cls.AfterGame, game=game_state)
+
     def is_initial(self):
         return self.root == self.Initial
 
@@ -44,6 +48,9 @@ class PlayerState:
     def is_in_game(self):
         return self.root == self.InGame
 
+    def is_after_game(self):
+        return self.root == self.AfterGame
+
     @classmethod
     def get_root_str(cls, root):
         if root == cls.Initial:
@@ -52,6 +59,8 @@ class PlayerState:
             return 'looking-for-game'
         elif root == cls.InGame:
             return 'in-game'
+        elif root == cls.AfterGame:
+            return 'after-game'
         else:
             raise ValueError()
 
@@ -70,7 +79,14 @@ class PlayerState:
             }
         elif self.root == self.InGame:
             action = {
-                'type': 'init-player(in-game)'
+                'type': 'init-player(in-game)',
+                'game': self.vars['game'].as_dict_for_player(self.player)
+            }
+        elif self.root == self.AfterGame:
+            action = {
+                'type': 'init-player(after-game)',
+                'summary': self.vars['game'].get_broader_end_summary(self.player),
+                'game': self.vars['game'].as_dict_for_player(self.player)
             }
         else:
             raise ValueError()

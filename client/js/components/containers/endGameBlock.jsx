@@ -55,7 +55,9 @@ class _EndGameBlock extends React.Component {
                     Игра окончена.
                 </strong>
                 {
-                    endSummary.isLoser ? (
+                    endSummary.loserNickname === null ? (
+                        <div>Произошла ничья</div>
+                    ) : endSummary.loserIsYou ? (
                         <div>Дураком оказались вы</div>
                     ) : (
                         <div>Дураком оказался <em>{ endSummary.loserNickname }</em></div>

@@ -7,7 +7,7 @@ const fIsDisplayed = (state=true, action) => {
     else if(action.type === 'INITIALIZE GAME') {
         return false;
     }
-    else if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
+    else if(action.type === 'init-player(after-game)') {
         return true;
     }
 
@@ -24,10 +24,10 @@ const fStatus = (state='initial', action) => {
     else if(action.type === 'STOPPED LOOKING FOR GAME') {
         return 'initial';
     }
-    else if(action.type === 'INITIALIZE GAME') {
+    else if(action.type === 'INITIALIZE GAME' || action.type === 'init-player(in-game)') {
         return 'in game';
     }
-    else if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
+    else if(action.type === 'init-player(after-game)') {
         return 'game end';
     }
     else if(action.type === 'QUIT FROM GAME') {
@@ -74,14 +74,8 @@ const fEndSummary = (state=null, action) => {
     if(action.type === 'init-player(initial)') {
         return null;
     }
-    else if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
-        return {
-            loserNickname: action.loserNickname,
-            isLoser: action.loserIsYou,
-            orderWon: action.orderWon,
-            iYou: action.iYou,
-            orderDisconnected: action.orderDisconnected
-        }
+    else if(action.type === 'init-player(after-game)') {
+        return action.summary;
     }
     else if(action.type === 'QUIT FROM GAME') {
         return null;

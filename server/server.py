@@ -75,7 +75,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     disconnect_timers = {}
 
-    MIN_NUM_PLAYERS = 3 # TODO: Apply some logic to it
+    MIN_NUM_PLAYERS = 2  # TODO: Apply some logic to it
 
     def check_origin(self, origin):
         # TODO: serve client page through Tornado so this can be removed
@@ -251,11 +251,12 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 player = self._player
 
                 if not self.player_states[player].is_initial():
-                    self.logger.warn("Player %s isn't in initial state" % (player, ))
+                    self.logger.warn("Player %s is in %s, should be in initial" % (player, self.player_states[player].as_short_str() ))
                     return
 
                 self.player_states[player] = PlayerState.get_looking_for_game(player, self.matchmaking_pool)
 
+                # TODO: transition from initial to lfg instead of init into lfg!
                 self.send_msg_to_player(player, self.player_states[player].as_init_action())
 
                 self.add_to_matchmaking_pool(player)
@@ -341,24 +342,27 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 cls.handle_disconnect(player)
 
     @classmethod
-    def handle_game_end(cls, game, identities):
-        for p in identities:
-            if p == game.end_summary['loser_uid']:
+    def handle_game_end(cls, game, players):
+        for p in players:
+            if p == game.end_summary['loser']:
                 p.count_loss()
             elif p in game.order_disconnected:
                 p.count_leave()
             elif p in game.order_won:
                 p.count_win()
 
-        cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_games(identities))
+            cls.player_states[p] = PlayerState.get_after_game(p, game)
+
+            cls.send_msg_to_player(p, cls.player_states[p].as_init_action())
+
+        cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_games(players))
 
     @classmethod
-    def initialize_game(cls, identities):
-        new_state = GameState.create_random([(p, p.nickname) for p in identities])
+    def initialize_game(cls, players):
+        new_state = GameState.create_random([(player, player.nickname) for player in players])
 
         new_state.add_update_handler(lambda p, msg: cls.send_msg_to_player(p, msg))
 
-        # TODO: refactor into, like, one object
         new_state.update_reset_timer_callback(lambda delay: cls.reset_timer(new_state, delay))
         new_state.update_bump_timer_callback(lambda delay: cls.bump_timer(new_state, delay))
         new_state.update_pause_timer_callback(lambda: cls.pause_timer(new_state))
@@ -368,8 +372,12 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             lambda identities: cls.handle_game_end(new_state, identities)
         )
 
-        for p in identities:
-            cls.running_games[p] = new_state
+        for player in players:
+            cls.running_games[player] = new_state
+
+            cls.player_states[player] = PlayerState.get_in_game(player, new_state)
+
+            # cls.send_msg_to_player(player, cls.player_states[player].as_init_action())
 
         new_state.start()
 

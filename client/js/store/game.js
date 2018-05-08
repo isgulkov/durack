@@ -140,7 +140,9 @@ const fDefendMoveCard = (state=null, action) => {
 
 const fTimer = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
-        clearInterval(state.interval);
+        if(state !== null) {
+            clearInterval(state.interval);
+        }
 
         return null;
     }
@@ -214,7 +216,7 @@ const fPlayersDisconnected = (state={}, action) => {
 };
 
 const fHasEnded = (state=false, action) => {
-    if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
+    if(action.type === 'init-player(after-game)') {
         return true;
     }
 
@@ -242,12 +244,14 @@ export const fGame = function(state='no game', action) {
     if(action.type === 'init-player(initial)') {
         return 'no game';
     }
-    if(action.type === 'INITIALIZE GAME') {
-        if(state.timer !== undefined) {
+    if(action.type === 'init-player(in-game)'
+        || action.type === 'init-player(after-game)'
+        || action.type === 'INITIALIZE GAME') {
+        if(state !== undefined && state.timer) {
             clearInterval(state.timer.interval);
         }
 
-        return fGame(action.initState, {type: NaN});
+        return fGame(action.game, {type: NaN});
     }
     else if(action.type === 'QUIT FROM GAME') {
         return 'no game';
