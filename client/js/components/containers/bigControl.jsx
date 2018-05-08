@@ -36,7 +36,7 @@ class _BigControl extends React.Component {
 
             // TODO: check if "End move" really does disappear appropriately with this shit
 
-            const numEmptyStacks = gameState.tableStacks.reduce((stack, x) => x + (stack.bottom === null));
+            const numEmptyStacks = gameState.tableStacks.reduce((stack, x) => x + (stack.bottom === null), 0);
 
             let numDefendantCards;
 
