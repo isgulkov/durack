@@ -22,7 +22,7 @@ class _BigControl extends React.Component {
         }
         else if((gameState.currentPhase === 'init' && gameState.iSpotlight === 0) ||
             (!gameState.optedEndMove && gameState.currentPhase === 'follow' && gameState.iSpotlight !== 0)) {
-            const putPossible = gameState.playerHand.some(playerCard => {
+            const haveCardsToPut = gameState.playerHand.some(playerCard => {
                 return gameState.tableStacks.some(stack => {
                     if(playerCard.rank === stack.top.rank) {
                         return true;
@@ -34,7 +34,26 @@ class _BigControl extends React.Component {
                 });
             });
 
-            if(putPossible) {
+            // TODO: check if "End move" really does disappear appropriately with this shit
+
+            const numEmptyStacks = gameState.tableStacks.reduce((stack, x) => x + (stack.bottom === null));
+
+            let numDefendantCards;
+
+            if(gameState.currentPhase === 'follow') {
+                numDefendantCards = gameState.opponents[gameState.iSpotlight - 1].numCards;
+            }
+            else {
+                let iDefendant = gameState.iSpotlight;
+
+                do {
+                    iDefendant = (iDefendant + 1) % gameState.numPlayers;
+                } while(!gameState.opponents[iDefendant - 1].inGame);
+
+                numDefendantCards = gameState.opponents[iDefendant - 1].numCards
+            }
+
+            if(haveCardsToPut && numEmptyStacks < numDefendantCards) {
                 return (
                     <BigHighlight totalWidth={this.props.totalWidth} totalHeight={this.props.totalHeight}
                                    text="Закончить ход" onClick={() => this.props.sendEndMove()} />

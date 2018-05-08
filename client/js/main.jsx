@@ -40,7 +40,6 @@ uiStore.dispatch({
 
 
 // TODO: fix the calculation of winner in the case where there aren't 1 player left (both spend all cards in a final exchange
-// TODO: don't show "End move" button where there's no option to continue the 'init' move
 
 // TODO: store messages for player in a queue while he's disconnected and then replay ?
 
