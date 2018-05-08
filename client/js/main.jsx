@@ -43,6 +43,8 @@ uiStore.dispatch({
 
 // TODO: a more interesting summary
 
+// TODO: better random nicknames
+
 // TODO: initialize state right on open
 // TODO: for when after a server that he had an large state with, the client reconnects to a server that first sees him
 
