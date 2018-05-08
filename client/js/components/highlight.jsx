@@ -18,7 +18,9 @@ class Highlight extends React.Component {
             'textAlign': 'center',
             'verticalAlign': 'middle',
             'lineHeight': this.props.height + 'px',
-            'padding': 0
+            'padding': 0,
+
+            'userSelect': 'none'
         }
     }
 

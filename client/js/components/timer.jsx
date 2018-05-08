@@ -19,6 +19,8 @@ class Timer extends React.Component {
             'textAlign': 'center',
             'verticalAlign': 'middle',
             'lineHeight': '32px',
+
+            'userSelect': 'none'
         }
     }
 
