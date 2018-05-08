@@ -39,7 +39,9 @@ uiStore.dispatch({
 });
 
 
-// TODO: fix the calculation of winner in the case where there aren't 1 player left (both spend all cards in a final exchange
+// TODO: fix the calculation of winner in the case where there aren't 1 player left (both spend all cards in a final exchange)
+
+// TODO: solve the mystery of game coming to an end really quick when everybody is disconnected
 
 // TODO: store messages for player in a queue while he's disconnected and then replay ?
 
