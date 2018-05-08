@@ -41,7 +41,9 @@ uiStore.dispatch({
 
 // TODO: auto-take when unbeatable and no more puts
 
-// TODO: a more interesting summary
+// TODO: a more interesting summary and individual player stats
+
+// TODO: better random nicknames
 
 // TODO: initialize state right on open
 // TODO: for when after a server that he had an large state with, the client reconnects to a server that first sees him

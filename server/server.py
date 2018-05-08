@@ -70,6 +70,12 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         # Non-None enables compression with default options.
         return {}
 
+    def set_uid_cookie(self, uid):
+        self.write_message(json.dumps({
+            'type': 'ACCEPT NEW UID',
+            'encryptedUid': self.create_signed_value('player-uid', uid)
+        }))
+
     def open(self):
         s_uid = self.get_secure_cookie('player-uid')
 
@@ -79,7 +85,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             identity = PlayerIdentity.from_uid(s_uid)
 
         if identity is None:
-            identity = PlayerIdentity.create_random()
+            identity = PlayerIdentity.create_new()
 
             self.set_uid_cookie(identity.uid)
 
@@ -116,12 +122,6 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     @staticmethod
     def get_ioloop():
         return tornado.ioloop.IOLoop.current()
-
-    def set_uid_cookie(self, uid):
-        self.write_message(json.dumps({
-            'type': 'ACCEPT NEW UID',
-            'uidCookie': self.create_signed_value('player-uid', uid)
-        }))
 
     @classmethod
     def handle_reconnect(cls, uid):
