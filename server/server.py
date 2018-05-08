@@ -99,6 +99,10 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
         if identity in self.disconnect_timers:
             self.handle_reconnect(identity)
+        else:
+            self.send_state_update_to_player(identity, {
+                'type': 'QUIT FROM GAME'
+            })
 
     def on_close(self):
         identity = self._identity

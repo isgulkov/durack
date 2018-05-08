@@ -45,9 +45,6 @@ uiStore.dispatch({
 
 // TODO: better random nicknames
 
-// TODO: initialize on open any state, not just the 'game' part
-// TODO: for when after a server that he had an large state with, the client reconnects to a server that first sees him
-
 // TODO: auto-take when 1x1, unbeatable and no more puts ?
 
 // TODO: even richer game stats and player stats
@@ -56,7 +53,6 @@ uiStore.dispatch({
 
 // TODO: Switch to ' in "symbols" and module names everywhere
 
-// TODO: persistent data about players between server restarts (a db)
 // TODO: persistent data about players by username/password
 
 // TODO: leave game from in-game menu

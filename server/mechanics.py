@@ -1120,8 +1120,6 @@ class GameState:
     # Representation
 
     def as_dict(self):
-        print self.table_stacks
-
         return {
             'players': self.players,
 
