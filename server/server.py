@@ -12,7 +12,7 @@ from tornado.options import define, options
 
 define("port", default=8888, help="run on the given port", type=int)
 
-from mechanics import GameState, IllegalMoveException
+from game_state import GameState, IllegalMoveException
 
 from player_identity import PlayerIdentity
 

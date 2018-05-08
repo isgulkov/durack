@@ -104,6 +104,10 @@ class Card:
 
 
 class GameState:
+    """
+    Represents the collective state of a game between several players.
+    """
+
     # Creation and initialization
 
     def __init__(self, players, player_hands, table_stacks, leftover_deck, played_deck, bottom_card):
