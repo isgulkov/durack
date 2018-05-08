@@ -1,0 +1,8 @@
+
+.children-default-cursor div {
+    cursor: default;
+}
+
+.children-default-cursor .clickable {
+    cursor: pointer;
+}
