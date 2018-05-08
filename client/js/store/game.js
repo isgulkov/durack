@@ -240,6 +240,10 @@ let fInitializedGame = combineReducers({
 
 export const fGame = function(state='no game', action) {
     if(action.type === 'INITIALIZE GAME') {
+        if(state.timer !== undefined) {
+            clearInterval(state.timer.interval);
+        }
+
         return fGame(action.initState, {type: NaN});
     }
     else if(action.type === 'QUIT FROM GAME') {
