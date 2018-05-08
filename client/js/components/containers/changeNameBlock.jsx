@@ -8,11 +8,13 @@ class _ChangeNameBlock extends React.Component {
         this.state = {
             promptVal: props.currentNickname
         };
+
+        this.inputRef = React.createRef();
     }
 
     handlePromptChange() {
         this.setState({
-            promptVal: this.refs.nicknamePrompt.value
+            promptVal: this.inputRef.current.value
         });
     }
 
@@ -22,6 +24,8 @@ class _ChangeNameBlock extends React.Component {
                 this.setState({
                     promptVal: this.props.currentNickname
                 });
+
+                this.inputRef.current.focus();
             }
         }
         else {
@@ -33,20 +37,28 @@ class _ChangeNameBlock extends React.Component {
         }
     }
 
+    handleSubmit(e) {
+        e.preventDefault();
+
+        this.props.sendNewNickname(this.state.promptVal);
+    }
+
     render() {
         if(this.props.isChangingNickname) {
             return (
                 <p>
-                    <input ref="nicknamePrompt"
+                    <input ref={this.inputRef}
                            type="text"
                            style={{display: 'inline'}}
                            value={this.state.promptVal}
-                           onChange={() => this.handlePromptChange()} />
-                    <a href="#" onClick={e => {
-                        e.preventDefault();
-                        console.log("nickname val", this.state.promptVal);
-                        this.props.sendNewNickname(this.state.promptVal);
-                    }}>OK</a>
+                           onChange={() => this.handlePromptChange()}
+                           onKeyPress={(e) => {
+                               if(e.key === 'Enter') {
+                                   this.handleSubmit(e)
+                               }
+                           }}
+                    />
+                    <a href="#" onClick={e => this.handleSubmit(e)}>OK</a>
                 </p>
             );
         }
