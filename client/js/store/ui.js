@@ -18,8 +18,17 @@ const fSocket = (state, action) => {
     return state;
 };
 
+const fIsInitialized = (state=false, action) => {
+    if(action.type.substring(0, 5) === 'init-') {
+        return true;
+    }
+
+    return state;
+};
+
 export const fUiState = combineReducers({
     game: fGame,
     menu: fMenu,
-    socket: fSocket
+    socket: fSocket,
+    isInitialized: fIsInitialized
 });

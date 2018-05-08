@@ -1,7 +1,10 @@
 import { combineReducers } from "redux";
 
 const fIsDisplayed = (state=true, action) => {
-    if(action.type === 'INITIALIZE GAME') {
+    if(action.type === 'init-player(initial)') {
+        return true;
+    }
+    else if(action.type === 'INITIALIZE GAME') {
         return false;
     }
     else if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
@@ -12,7 +15,10 @@ const fIsDisplayed = (state=true, action) => {
 };
 
 const fStatus = (state='initial', action) => {
-    if(action.type === 'LOOKING FOR GAME') {
+    if(action.type === 'init-player(initial)') {
+        return 'initial';
+    }
+    else if(action.type === 'init-player(looking-for-game)') {
         return 'looking';
     }
     else if(action.type === 'STOPPED LOOKING FOR GAME') {
@@ -31,16 +37,19 @@ const fStatus = (state='initial', action) => {
     return state;
 };
 
-const fNumLooking = (state=NaN, action) => {
-    if(action.type === 'UPDATE NUM LOOKING FOR GAME') {
-        return action.num;
+const fNumLooking = (state="?", action) => {
+    if(action.type === 'init-player(looking-for-game)' || action.type === 'update-looking-for-game(num)') {
+        return action.numLooking;
     }
 
     return state;
 };
 
 const fCurrentNickname = (state="", action) => {
-    if(action.type === 'CONFIRM SET NICKNAME') {
+    if(action.type === 'init-player(initial)') {
+        return action.nickname;
+    }
+    else if(action.type === 'CONFIRM SET NICKNAME') {
         return action.newNickname;
     }
 
@@ -48,7 +57,10 @@ const fCurrentNickname = (state="", action) => {
 };
 
 const fChangingNickname = (state=false, action) => {
-    if(action.type === 'CLICK CHANGE NICKNAME') {
+    if(action.type === 'init-player(initial)') {
+        return false;
+    }
+    else if(action.type === 'CLICK CHANGE NICKNAME') {
         return true;
     }
     else if(action.type === 'CONFIRM SET NICKNAME') {
@@ -59,7 +71,10 @@ const fChangingNickname = (state=false, action) => {
 };
 
 const fEndSummary = (state=null, action) => {
-    if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
+    if(action.type === 'init-player(initial)') {
+        return null;
+    }
+    else if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
         return {
             loserNickname: action.loserNickname,
             isLoser: action.loserIsYou,

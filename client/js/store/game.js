@@ -239,6 +239,9 @@ let fInitializedGame = combineReducers({
 });
 
 export const fGame = function(state='no game', action) {
+    if(action.type === 'init-player(initial)') {
+        return 'no game';
+    }
     if(action.type === 'INITIALIZE GAME') {
         if(state.timer !== undefined) {
             clearInterval(state.timer.interval);

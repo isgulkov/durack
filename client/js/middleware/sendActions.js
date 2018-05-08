@@ -4,12 +4,12 @@ let sendActionsMiddleware = store => next => action => {
 
     if(action.type === 'SEND FIND GAME') {
         msg = {
-            action: 'FIND GAME'
+            kind: 'act-looking-for-game(start)'
         };
     }
     else if(action.type === 'SEND STOP LOOKING') {
         msg = {
-            action: 'CANCEL FIND GAME'
+            kind: 'act-looking-for-game(stop)'
         };
     }
     else if(action.type === 'SEND SET NICKNAME') {
