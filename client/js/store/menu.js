@@ -61,8 +61,10 @@ const fChangingNickname = (state=false, action) => {
 const fEndSummary = (state=null, action) => {
     if(action.type === 'STATE DELTA' && action.change === 'GAME ENDED') {
         return {
-            'loserNickname': action.loserNickname,
-            'isLoser': action.loserIsYou
+            loserNickname: action.loserNickname,
+            isLoser: action.loserIsYou,
+            orderWon: action.orderWon,
+            orderDisconnected: action.orderDisconnected
         }
     }
     else if(action.type === 'QUIT FROM GAME') {

@@ -14,6 +14,5 @@ export const filterWhenFrozen = (store => next => action => {
         }
     }
 
-
     next(action);
 });

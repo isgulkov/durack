@@ -39,14 +39,14 @@ uiStore.dispatch({
 });
 
 
-// TODO: auto-take when unbeatable and no more puts
-
-// TODO: a more interesting summary and individual player stats
+// TODO: auto-take when 1x1, unbeatable and no more puts
 
 // TODO: better random nicknames
 
 // TODO: initialize state right on open
 // TODO: for when after a server that he had an large state with, the client reconnects to a server that first sees him
+
+// TODO: even richer game stats and player stats
 
 // TODO: graphically show when the player is out of game himself
 

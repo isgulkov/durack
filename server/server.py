@@ -261,6 +261,18 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 cls.handle_disconnect(identity)
 
     @classmethod
+    def handle_game_end(cls, game, identities):
+        for p in identities:
+            if p == game.end_summary['loser_uid']:
+                p.count_loss()
+            elif p in game.order_disconnected:
+                p.count_leave()
+            elif p in game.order_won:
+                p.count_win()
+
+        cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_games(identities))
+
+    @classmethod
     def initialize_game(cls, identities):
         new_state = GameState.create_random([(p, p.nickname) for p in identities])
 
@@ -272,9 +284,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         new_state.update_pause_timer_callback(lambda: cls.pause_timer(new_state))
         new_state.update_resume_timer_callback(lambda: cls.resume_timer(new_state))
 
-        # TODO: ~20s
         new_state.update_end_game_callback(
-            lambda identities: cls.get_ioloop().call_later(5, lambda: cls.remove_players_from_games(identities))
+            lambda identities: cls.handle_game_end(new_state, identities)
         )
 
         for p in identities:

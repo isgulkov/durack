@@ -16,10 +16,10 @@ class PlayerIdentity(object):
             self.db.insert(self.as_dict())
 
     def __eq__(self, other):
-        return self._uid == other._uid
+        return self.uid == other.uid
 
     def __hash__(self):
-        return hash(self._uid)
+        return hash(self.uid)
 
     def __str__(self):
         return repr(self)
@@ -70,6 +70,9 @@ class PlayerIdentity(object):
         self._num_played += 1
 
         self._dump()
+
+    def count_leave(self):
+        pass  # TODO: implement
 
     @classmethod
     def from_uid(cls, uid):

@@ -137,6 +137,9 @@ class GameState:
 
         self.disconnected_players = set()
 
+        self.order_disconnected = []
+        self.order_won = []
+
     @classmethod
     def create_random(cls, players):
         """
@@ -270,7 +273,9 @@ class GameState:
 
         self._send_timed_out(player_uid)
 
-        self.in_game[player_uid] = False
+        self._apply_player_out_of_game(player_uid, True)
+
+        self._send_player_out_of_game(player_uid)
 
         if self.spotlight == player_uid:
             self._end_phase_on_timeout()
@@ -823,7 +828,7 @@ class GameState:
         # Mark players that have no cards left after the handout as out of game
         for uid, name in self.players:
             if self.in_game[uid] and len(self.player_hands[uid]) == 0:
-                self.in_game[uid] = False
+                self._apply_player_out_of_game(uid)
 
                 self._send_player_out_of_game(uid)
 
@@ -838,6 +843,20 @@ class GameState:
             self._advance_spotlight()
 
         self._reset_timer()
+
+    def _apply_player_out_of_game(self, player_uid, disconnect=False):
+        """
+        Mark the specified player as out of game.
+
+        Note: is is assumed that the player is in game.
+        """
+
+        self.in_game[player_uid] = False
+
+        if disconnect:
+            self.order_disconnected.append(player_uid)
+        else:
+            self.order_won.append(player_uid)
 
     def _end_the_game(self):
         """
@@ -950,6 +969,8 @@ class GameState:
         })
 
     def _send_reset_timer(self, new_delay):
+        # TODO: doc
+
         self._send_update_to_all({
             'change': 'SET TIMER',
             'numSeconds': new_delay
@@ -1084,11 +1105,15 @@ class GameState:
         Note: the game is assumed to have ended and therefore `end_summary` field populated.
         """
 
-        for uid, name in self.players:
-            self._send_update(uid, {
+        for player_uid, name in self.players:
+            self._send_update(player_uid, {
                 'change': 'GAME ENDED',
                 'loserNickname': self.end_summary['loser_nickname'],
-                'loserIsYou': self.end_summary['loser_uid'] == uid
+                'loserIsYou': self.end_summary['loser_uid'] == player_uid,
+                'orderWon':
+                    [self.players[self._index_of_player(uid)][1] for uid in self.order_won],
+                'orderDisconnected':
+                    [self.players[self._index_of_player(uid)][1] for uid in self.order_disconnected]
             })
 
     # Representation
