@@ -238,11 +238,12 @@ class GameState:
         they either reconnect or time out.
         """
 
-        self._send_disconnected(player_uid, reconnect_time)
+        if player_uid not in self.disconnected_players:
+            self._send_disconnected(player_uid, reconnect_time)
 
-        self.disconnected_players.add(player_uid)
+            self.disconnected_players.add(player_uid)
 
-        self._pause_timer()
+            self._pause_timer()
 
     def handle_reconnect(self, player_uid):
         """
