@@ -39,6 +39,8 @@ uiStore.dispatch({
 });
 
 
+// TODO: deal with the problem of spotty sockets by grouping messages into queues
+
 // TODO: fix the calculation of winner in the case where there aren't 1 player left (both spend all cards in a final exchange)
 
 // TODO: solve the mystery of game coming to an end really quick when everybody is disconnected

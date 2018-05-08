@@ -1113,6 +1113,8 @@ class GameState:
                 'loserIsYou': self.end_summary['loser_uid'] == player_uid,
                 'orderWon':
                     [self.players[self._index_of_player(uid)][1] for uid in self.order_won],
+                'iYou':
+                    self.order_won.index(player_uid) if player_uid in self.order_won else None,
                 'orderDisconnected':
                     [self.players[self._index_of_player(uid)][1] for uid in self.order_disconnected]
             })

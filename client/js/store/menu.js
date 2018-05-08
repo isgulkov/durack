@@ -64,6 +64,7 @@ const fEndSummary = (state=null, action) => {
             loserNickname: action.loserNickname,
             isLoser: action.loserIsYou,
             orderWon: action.orderWon,
+            iYou: action.iYou,
             orderDisconnected: action.orderDisconnected
         }
     }

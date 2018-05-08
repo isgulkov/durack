@@ -34,26 +34,9 @@ class _BigControl extends React.Component {
                 });
             });
 
-            // TODO: check if "End move" really does disappear appropriately with this shit
+            // TODO: narrow down the set of states where this button shows up
 
-            const numEmptyStacks = gameState.tableStacks.reduce((stack, x) => x + (stack.bottom === null), 0);
-
-            let numDefendantCards;
-
-            if(gameState.currentPhase === 'follow') {
-                numDefendantCards = gameState.opponents[gameState.iSpotlight - 1].numCards;
-            }
-            else {
-                let iDefendant = gameState.iSpotlight;
-
-                do {
-                    iDefendant = (iDefendant + 1) % gameState.numPlayers;
-                } while(!gameState.opponents[iDefendant - 1].inGame);
-
-                numDefendantCards = gameState.opponents[iDefendant - 1].numCards
-            }
-
-            if(haveCardsToPut && numEmptyStacks < numDefendantCards) {
+            if(haveCardsToPut) {
                 return (
                     <BigHighlight totalWidth={this.props.totalWidth} totalHeight={this.props.totalHeight}
                                    text="Закончить ход" onClick={() => this.props.sendEndMove()} />

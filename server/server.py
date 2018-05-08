@@ -70,6 +70,15 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         # Non-None enables compression with default options.
         return {}
 
+    @classmethod
+    def add_connection_with(cls, identity, connection):
+        if identity not in cls.connection_with:
+            cls.connection_with[identity] = set()
+
+        cls.connection_with[identity].add(connection)
+
+        print identity.nickname, len(cls.connection_with[identity]), [str(c) for c in cls.connection_with[identity]]
+
     def set_uid_cookie(self, uid):
         self.write_message(json.dumps({
             'type': 'ACCEPT NEW UID',
@@ -89,7 +98,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
             self.set_uid_cookie(identity.uid)
 
-        self.connection_with[identity] = self
+        self.add_connection_with(identity, self)
+
         self._identity = identity
 
         self.send_state_update_to_player(identity, {
@@ -107,8 +117,9 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         identity = self._identity
 
-        if identity in self.connection_with:
-            del self.connection_with[identity]
+        # TODO: fucking something...
+        # if identity in self.connection_with:
+        #     del self.connection_with[identity]
 
         if identity in self.matchmaking_pool:
             self.remove_from_matchmaking_pool(identity)
@@ -248,12 +259,40 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             self.remove_player_from_game(self._identity)
 
     @classmethod
+    def put_in_queue_for(cls, identity, update):
+        if identity not in cls.queue_for:
+            cls.queue_for[identity] = []
+
+        cls.queue_for[identity].append(update)
+
+        print "Lost messages:"
+
+        for identity, xs in cls.queue_for.iteritems():
+            print identity.nickname, ":", len(xs), " "
+
+        print
+
+    @classmethod
+    def get_working_connection_with(cls, identity):
+        cls.connection_with[identity] = set([conn for conn in cls.connection_with[identity] if conn.stream.socket is not None])
+
+        if len(cls.connection_with[identity]) == 0:
+            return None
+        else:
+            for c in cls.connection_with[identity]:
+                return c
+
+    @classmethod
     def send_state_update_to_player(cls, identity, update, call_handler_on_disconnect=True):
-        if identity in cls.disconnect_timers:
-            # Already disconnected
+        if identity in cls.disconnect_timers or identity not in cls.connection_with:
+            cls.put_in_queue_for(identity, update)
             return
 
-        connection = cls.connection_with[identity]
+        connection = cls.get_working_connection_with(identity)
+
+        if connection is None:
+            print "No connection to", identity.nickname
+            return
 
         if 'type' not in update:
             update['type'] = 'STATE DELTA'

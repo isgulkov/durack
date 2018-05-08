@@ -15,6 +15,10 @@ class _EndGameBlock extends React.Component {
         let winnerList = null;
 
         if(endSummary.orderWon.length !== 0) {
+            if(endSummary.iYou !== null) {
+                endSummary.orderWon[endSummary.iYou] += " (вы)";
+            }
+
             winnerList = (
                 <div>
                     <p><em>Вышли:</em></p>
