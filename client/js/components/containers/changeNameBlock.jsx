@@ -20,7 +20,7 @@ class _ChangeNameBlock extends React.Component {
 
     componentDidUpdate() {
         if(this.props.isChangingNickname) {
-            if(this.state.promptVal === "") {
+            if(this.state.promptVal === null) {
                 this.setState({
                     promptVal: this.props.currentNickname
                 });
@@ -29,9 +29,9 @@ class _ChangeNameBlock extends React.Component {
             }
         }
         else {
-            if(this.state.promptVal !== "") {
+            if(this.state.promptVal !== null) {
                 this.setState({
-                    promptVal: ""
+                    promptVal: null
                 });
             }
         }
