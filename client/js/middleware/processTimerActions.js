@@ -28,6 +28,8 @@ export const processTimerActions = (store => next => action => {
         const moveTimer = action.initState.timer;
 
         if(moveTimer !== undefined) {
+            clearInterval(moveTimer.interval);
+
             moveTimer.interval = createMoveTickInterval(store);
         }
 
