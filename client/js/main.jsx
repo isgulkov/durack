@@ -39,11 +39,17 @@ uiStore.dispatch({
 });
 
 
+// TODO: no select for timer and button text
+// TODO: handle cases where there aren't 1 player left
+// TODO: don't show "End move" button where there's no option to continue the 'init' move
+
+// TODO: store messages for player in a queue while he's disconnected and then replay ?
+
 // TODO: auto-take when 1x1, unbeatable and no more puts
 
 // TODO: better random nicknames
 
-// TODO: initialize state right on open
+// TODO: initialize on open any state, not just the 'game' part
 // TODO: for when after a server that he had an large state with, the client reconnects to a server that first sees him
 
 // TODO: even richer game stats and player stats
