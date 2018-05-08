@@ -65,7 +65,7 @@ let sendActionsMiddleware = store => next => action => {
     }
     else if(action.type === 'FINISH GAME') {
         msg = {
-            action: 'FINISH GAME'
+            kind: 'act-finish-game'
         };
     }
 

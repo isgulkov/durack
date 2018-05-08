@@ -220,22 +220,20 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         }))
 
     @classmethod
-    def remove_players_from_games(cls, identities):
-        for p in identities:
-            cls.remove_player_from_game(p)
+    def remove_players_from_game(cls, game, players):
+        for player in players:
+            cls.remove_player_from_game(game, player)
 
     @classmethod
-    def remove_player_from_game(cls, identity):
-        logging.warn("Remove %s from games" % identity)
+    def remove_player_from_game(cls, game, player):
+        if player in cls.running_games and cls.running_games[player] == game:
+            del cls.running_games[player]
 
-        if identity in cls.running_games:
-            logging.warn("Removed")
+            # TODO: determine if the player is still even online?
 
-            del cls.running_games[identity]
+            cls.player_states[player] = PlayerState.get_initial(player)
 
-        cls.send_msg_to_player(identity, {
-            'type': 'QUIT FROM GAME'
-        }, call_handler_on_disconnect=False)
+            cls.send_msg_to_player(player, cls.player_states[player].as_init_action())
 
     def on_message(self, msg):
         self.logger.info("Got message %s" % msg)
@@ -243,13 +241,13 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         msg = json.loads(msg)
 
         if 'kind' in msg:  # new
+            player = self._player
+
             if msg['kind'] == 'request-init':
                 self.logger.info("Got request for init form socket %s" % self)
 
-                self.send_msg_to_player(self._player, self.player_states[self._player].as_init_action())
+                self.send_msg_to_player(player, self.player_states[player].as_init_action())
             elif msg['kind'] == 'act-looking-for-game(start)':
-                player = self._player
-
                 if not self.player_states[player].is_initial():
                     self.logger.warn("Player %s is in %s, should be in initial" % (player, self.player_states[player].as_short_str() ))
                     return
@@ -261,8 +259,6 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
                 self.add_to_matchmaking_pool(player)
             elif msg['kind'] == 'act-looking-for-game(stop)':
-                player = self._player
-
                 if not self.player_states[player].is_looking_for_game():
                     self.logger.warn("Player %s isn't looking for game" % (player,))
                     return
@@ -272,6 +268,12 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 self.send_msg_to_player(player, self.player_states[player].as_init_action())
 
                 self.remove_from_matchmaking_pool(player)
+            elif msg['kind'] == 'act-finish-game':
+                if not self.player_states[player].is_after_game():
+                    self.logger.warn("Player %s isn't in a game that ended" % (player,))
+                    return
+
+                self.remove_player_from_game(self.player_states[player].get_game(), player)
         elif 'action' in msg:  # old
             if msg['action'] == 'SET NICKNAME':
                 self.set_nickname(msg['newNickname'])
@@ -290,8 +292,6 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                     logging.warning("Player %s issued an illegal move: %s" % (self, repr(e), ))
 
                     logging.warning(game.as_dict())
-            elif msg['action'] == 'FINISH GAME':
-                self.remove_player_from_game(self._identity)
 
     @classmethod
     def put_in_queue_for(cls, identity, update):
@@ -344,7 +344,9 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     @classmethod
     def handle_game_end(cls, game, players):
         for p in players:
-            if p == game.end_summary['loser']:
+            loser = game.end_summary['loser']
+
+            if loser is not None and p == loser:
                 p.count_loss()
             elif p in game.order_disconnected:
                 p.count_leave()
@@ -355,7 +357,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
             cls.send_msg_to_player(p, cls.player_states[p].as_init_action())
 
-        cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_games(players))
+        cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_games(game, players))
 
     @classmethod
     def initialize_game(cls, players):

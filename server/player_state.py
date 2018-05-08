@@ -51,6 +51,12 @@ class PlayerState:
     def is_after_game(self):
         return self.root == self.AfterGame
 
+    def get_game(self):
+        if not (self.is_in_game() or self.is_after_game()):
+            raise ValueError()
+
+        return self.vars['game']
+
     @classmethod
     def get_root_str(cls, root):
         if root == cls.Initial:
