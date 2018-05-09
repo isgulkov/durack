@@ -19,34 +19,6 @@ from game_state import GameState, IllegalMoveException
 from player_identity import PlayerIdentity
 
 
-def read_cookie_secret():
-    with open('cookie_secret.key') as f:
-        return f.read()
-
-
-class Application(tornado.web.Application):
-    def __init__(self):
-        handlers = [
-            (r'/durack_game', GameSocketHandler),
-        ]
-
-        if options.client_path is not None:
-            handlers.append(
-                (r'/(.*)', tornado.web.StaticFileHandler, {
-                    'path': options.client_path,
-                    'default_filename': "index.html"
-                }),
-            )
-
-        settings = dict(
-            cookie_secret=read_cookie_secret(),
-            template_path=os.path.join(os.path.dirname(__file__), "../client")
-            # xsrf_cookies=True,
-        )
-
-        super(Application, self).__init__(handlers, **settings)
-
-
 class GameSocketHandler(tornado.websocket.WebSocketHandler):
     logger = logging.getLogger('durack/server')
 
@@ -504,8 +476,36 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             return "(disconnected)"
 
 
+def get_cookie_secret():
+    with open('cookie_secret.key') as f:
+        return f.read()
+
+
+class Application(tornado.web.Application):
+    def __init__(self):
+        handlers = [
+            (r'/durack_game', GameSocketHandler),
+        ]
+
+        if options.client_path is not None:
+            handlers.append(
+                (r'/(.*)', tornado.web.StaticFileHandler, {
+                    'path': options.client_path,
+                    'default_filename': "index.html"
+                }),
+            )
+
+        settings = dict(
+            cookie_secret=get_cookie_secret(),
+            # xsrf_cookies=True,
+        )
+
+        super(Application, self).__init__(handlers, **settings)
+
+
 def launch_application():
     tornado.options.parse_command_line()
+
     app = Application()
     app.listen(options.port)
 
