@@ -275,6 +275,8 @@ class GameState:
         other players are disconnected.
         """
 
+        # TODO: unsubscribe already timed out players from updates from this game
+
         self._send_timed_out(player_uid)
 
         self._apply_player_out_of_game(player_uid, True)
@@ -283,8 +285,6 @@ class GameState:
 
         if self.spotlight == player_uid:
             self._end_phase_on_timeout()
-
-        # TODO: instead move into leftover deck and reshuffle?
 
         self._send_add_to_played_deck(len(self.player_hands[player_uid]))
 

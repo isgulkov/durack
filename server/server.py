@@ -195,7 +195,14 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def player_timed_out(cls, player):
-        pass
+        cls.logger.info("Player %s has timed out" % player)
+
+        state = cls.player_states[player]
+
+        if state.is_in_game():
+            state.get_game().handle_disconnect_timeout(player)
+
+        del cls.player_states[player]
 
     # Matchmaking
 
