@@ -1176,6 +1176,10 @@ class GameState:
             'leftoverDeckSize': len(self.leftover_deck),
             'bottomCard': self.bottom_card.as_dict(),
 
+            'timer': {
+                'numSeconds': self._move_timer.delay
+            },
+
             'playedDeckSize': len(self.played_deck),
 
             'playersDisconnected': {

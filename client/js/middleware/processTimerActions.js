@@ -1,10 +1,24 @@
 
 const createMoveTickInterval = (store) => {
-    return setInterval(() => {
+    /*
+    This is where all these move timer intervals are created and this is where they are cleared.
+
+    TODO: don't do setInterval each time the timer is reset, just have a permanent, more granular one?
+     */
+
+    if(window.hasOwnProperty('___durack_move_interval')) {
+        clearInterval(window.___durack_move_interval)
+    }
+
+    const newInterval = setInterval(() => {
         store.dispatch({
             type: 'TIMER TICK'
         });
     }, 1000);
+
+    window.___durack_move_interval = newInterval;
+
+    return newInterval;
 };
 
 const createDisconnectTickInteval = (store, iPlayer) => {
@@ -20,22 +34,12 @@ export const processTimerActions = (store => next => action => {
     if(action.type === 'STATE DELTA' && action.change === 'timer-move-set') {
         action.newInterval = createMoveTickInterval(store);
     }
+    else
+    if(action.type === 'init-player(in-game)' || action.type === 'INITIALIZE GAME') {
+        action.game.timer.interval = createMoveTickInterval(store);
+    }
     else if(action.type === 'player-disconnected') {
         action.interval = createDisconnectTickInteval(store, action.iPlayer)
-    }
-    else if(action.type === 'init-player(in-game)' || action.type === 'INITIALIZE GAME') {
-        // Restore the `setInterval`s on an initState
-        const moveTimer = action.game.timer;
-
-        if(moveTimer !== undefined) {
-            clearInterval(moveTimer.interval);
-
-            moveTimer.interval = createMoveTickInterval(store);
-        }
-
-        // Object.keys(action.initState.playersDisconnected).forEach(iPlayer => {
-        //     action.initState.playersDisconnected[iPlayer].interval = createDisconnectTickInteval(store, iPlayer)
-        // });
     }
 
     next(action);

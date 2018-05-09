@@ -245,12 +245,8 @@ export const fGame = function(state='no game', action) {
         return 'no game';
     }
     if(action.type === 'init-player(in-game)'
-        || action.type === 'init-player(after-game)'
-        || action.type === 'INITIALIZE GAME') {
-        if(state !== undefined && state.timer) {
-            clearInterval(state.timer.interval);
-        }
-
+            || action.type === 'init-player(after-game)'
+            || action.type === 'INITIALIZE GAME') {
         return fGame(action.game, {type: NaN});
     }
     else if(action.type === 'QUIT FROM GAME') {
