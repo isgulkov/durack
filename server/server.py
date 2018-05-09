@@ -11,6 +11,7 @@ import tornado.websocket
 from tornado.options import define, options
 
 define("port", default=8888, help="run on the given port", type=int)
+define("client_path", default=None, help="path to the static files of the client app")
 
 from player_state import PlayerState
 from game_state import GameState, IllegalMoveException
@@ -26,11 +27,16 @@ def read_cookie_secret():
 class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r'/game', GameSocketHandler),
-
-            (r'/', IndexHandler),
-            (r'/(.*)', tornado.web.StaticFileHandler, {'path': '../client'}),
+            (r'/durack_game', GameSocketHandler),
         ]
+
+        if options.client_path is not None:
+            handlers.append(
+                (r'/(.*)', tornado.web.StaticFileHandler, {
+                    'path': options.client_path,
+                    'default_filename': "index.html"
+                }),
+            )
 
         settings = dict(
             cookie_secret=read_cookie_secret(),
@@ -39,12 +45,6 @@ class Application(tornado.web.Application):
         )
 
         super(Application, self).__init__(handlers, **settings)
-
-
-class IndexHandler(tornado.web.RequestHandler):
-    def get(self):
-        # TODO: integrate with parcel somehow
-        self.render("../client/index.html")
 
 
 class GameSocketHandler(tornado.websocket.WebSocketHandler):
@@ -504,7 +504,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             return "(disconnected)"
 
 
-if __name__ == "__main__":
+def launch_application():
     tornado.options.parse_command_line()
     app = Application()
     app.listen(options.port)

@@ -1,6 +1,6 @@
 
 const createAndDispatchSocket = (uiStore) => {
-    const socket = new WebSocket('ws://localhost:8888/game');
+    const socket = new WebSocket('ws://localhost:8888/durack_game');
 
     socket.onopen = () => {
         uiStore.dispatch({
