@@ -1,6 +1,8 @@
 from random import SystemRandom
 import logging
 
+from timer import Timer
+
 
 def urandom_shuffle_inplace(xs):
     """
@@ -110,6 +112,9 @@ class GameState:
 
     logger = logging.getLogger('durack/game')
 
+    MOVE_TIME = 10.1
+    BUMP_TIME = 3
+
     # Creation and initialization
 
     def __init__(self, players, player_hands, table_stacks, leftover_deck, played_deck, bottom_card):
@@ -141,6 +146,8 @@ class GameState:
         self.end_move_votes = [False for _ in players]
 
         self._update_handlers = set()
+
+        self._move_timer = Timer(on_fire=self._end_phase_on_timeout, on_reset=self._send_reset_timer)
 
         self.disconnected_players = set()
 
@@ -201,24 +208,24 @@ class GameState:
         for uid, name in self.players:
             self._send_initialize(uid)
 
-        self._reset_timer()
+        self._move_timer.reset(self.MOVE_TIME)
 
     # Observer management
 
-    def update_reset_timer_callback(self, callback):
-        self._reset_timer_callback = callback
-
-    def update_bump_timer_callback(self, callback):
-        self._bump_timer_callback = callback
-
-    def update_pause_timer_callback(self, callback):
-        self._pause_timer_callback = callback
-
-    def update_resume_timer_callback(self, callback):
-        self._resume_timer_callback = callback
-
-    def update_get_timer_delay_callback(self, callback):
-        self._get_timer_delay_callback = callback
+    # def update_reset_timer_callback(self, callback):
+    #     self._reset_timer_callback = callback
+    #
+    # def update_bump_timer_callback(self, callback):
+    #     self._bump_timer_callback = callback
+    #
+    # def update_pause_timer_callback(self, callback):
+    #     self._pause_timer_callback = callback
+    #
+    # def update_resume_timer_callback(self, callback):
+    #     self._resume_timer_callback = callback
+    #
+    # def update_get_timer_delay_callback(self, callback):
+    #     self._get_timer_delay_callback = callback
 
     def update_end_game_callback(self, callback):
         self._end_game_callback = callback
@@ -250,7 +257,7 @@ class GameState:
 
             self.disconnected_players.add(player_uid)
 
-            self._pause_timer()
+            self._move_timer.pause()
 
     def handle_reconnect(self, player_uid):
         """
@@ -266,7 +273,7 @@ class GameState:
             self._send_reconnected(player_uid)
 
             if len(self.disconnected_players) == 0:
-                self._resume_timer()
+                self._move_timer.resume()
         else:
             self.logger.error("Reconnect came for %s, who isn't disconnected" % player_uid)
 
@@ -303,44 +310,12 @@ class GameState:
             self.disconnected_players.remove(player_uid)
 
         if len(self.disconnected_players) == 0:
-            self._resume_timer()
+            self._move_timer.resume()
 
     # Timer state
 
     def handle_timer_set(self, delay):
         self._send_reset_timer(delay)
-
-    def handle_timer_runout(self):
-        self._end_phase_on_timeout()
-
-    def _reset_timer(self):
-        """
-        Reset move timer to a predefined delay (to be called at the beginning of a phase)
-        """
-
-        self._reset_timer_callback(10.1)
-
-    def _bump_timer(self):
-        """
-        Bump move timer delay by a predefined amount (to be called after a state-altering move)
-        """
-
-        self._bump_timer_callback(3)
-
-    def _pause_timer(self):
-        """
-        Pause move timer until further resumption (to be called when players disconnect)
-        """
-
-        self._pause_timer_callback()
-
-    def _resume_timer(self):
-        """
-        Resume move timer that was previously paused (to be called when every disconnected player has either reconnected
-        or left)
-        """
-
-        self._resume_timer_callback()
 
     # Information about state
 
@@ -701,7 +676,7 @@ class GameState:
         if self.phase == 'init' and not self._put_possible(player_uid):
             self._end_init_phase()
         else:
-            self._bump_timer()
+            self._move_timer.bump(self.BUMP_TIME)
 
         self._reset_all_end_move_votes()
 
@@ -722,7 +697,7 @@ class GameState:
 
             self._send_phase()
 
-        self._reset_timer()
+        self._move_timer.reset(self.MOVE_TIME)
 
     def _advance_spotlight(self):
         """
@@ -762,7 +737,7 @@ class GameState:
         if not self._follow_phase_will_continue():
             self._end_follow_phase()
         else:
-            self._bump_timer()
+            self._move_timer.bump(self.BUMP_TIME)
 
     def _hand_out_cards(self):
         """
@@ -849,7 +824,7 @@ class GameState:
         if not self.is_playing[self.spotlight]:
             self._advance_spotlight()
 
-        self._reset_timer()
+        self._move_timer.reset(self.MOVE_TIME)
 
     def _apply_player_out_of_game(self, player_uid, disconnect=False):
         """
@@ -986,10 +961,12 @@ class GameState:
         })
 
     def _send_reset_timer(self, new_delay):
-        # TODO: doc
+        """
+        Update *all players* on the move timer being reset to the specified delay
+        """
 
         self._send_update_to_all({
-            'change': 'SET TIMER',
+            'change': 'timer-move-set',
             'numSeconds': new_delay
         })
 

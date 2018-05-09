@@ -1,5 +1,4 @@
 import logging
-import os.path
 import json
 
 import tornado.escape
@@ -38,14 +37,10 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     running_games = {}  # TODO: old -- replace with access through `self.player_states`
     player_states = {}  # TODO: type hint this
 
-    timers = {}
-    timer_deadlines = {}
-    paused_timer_delays = {}
-
     connection_with = {}
     queue_for = {}
 
-    disconnect_timers = {}
+    disconnect_timeouts = {}
 
     MIN_NUM_PLAYERS = 2  # TODO: Apply some logic to it
 
@@ -114,7 +109,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             self.logger.info("New player online, init their state with %s" % player_state.as_init_action())
 
             self.player_states[player] = player_state
-        elif player in self.disconnect_timers:
+        elif player in self.disconnect_timeouts:
             self.player_reconnected(player)
         else:
             self.logger.debug("Got a new connection with %s" % player)
@@ -138,9 +133,9 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def player_reconnected(cls, player):
-        cls.get_ioloop().remove_timeout(cls.disconnect_timers[player])
+        cls.get_ioloop().remove_timeout(cls.disconnect_timeouts[player])
 
-        del cls.disconnect_timers[player]
+        del cls.disconnect_timeouts[player]
 
         state = cls.player_states[player]
 
@@ -163,7 +158,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         elif state.is_in_game():
             state.get_game().handle_disconnect(player, RECONNECT_TIME)
 
-        cls.disconnect_timers[player] = cls.get_ioloop().call_later(RECONNECT_TIME, cls.player_timed_out, player)
+        cls.disconnect_timeouts[player] = cls.get_ioloop().call_later(RECONNECT_TIME, cls.player_timed_out, player)
 
     @classmethod
     def player_timed_out(cls, player):
@@ -331,7 +326,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     def send_msg_to_player(cls, player, msg, call_handler_on_disconnect=True):
         cls.logger.debug("Try to send to %s message %s" % (player, msg))
 
-        if player in cls.disconnect_timers or player not in cls.connection_with:
+        if player in cls.disconnect_timeouts or player not in cls.connection_with:
             cls.logger.warn("No connection with for %s" % player)
             # cls.put_in_queue_for(player, msg)
             return
@@ -376,11 +371,6 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
         new_state.add_update_handler(lambda p, msg: cls.send_msg_to_player(p, msg))
 
-        new_state.update_reset_timer_callback(lambda delay: cls.reset_timer(new_state, delay))
-        new_state.update_bump_timer_callback(lambda delay: cls.bump_timer(new_state, delay))
-        new_state.update_pause_timer_callback(lambda: cls.pause_timer(new_state))
-        new_state.update_resume_timer_callback(lambda: cls.resume_timer(new_state))
-
         new_state.update_end_game_callback(
             lambda identities: cls.handle_game_end(new_state, identities)
         )
@@ -393,76 +383,6 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             # cls.send_msg_to_player(player, cls.player_states[player].as_init_action())
 
         new_state.start()
-
-    @classmethod
-    def bump_timer(cls, game, d_delay):
-        """
-        Reset move timer for `game` to fire `d_delay` seconds further into the future than it would've otherwise
-        """
-
-        if game not in cls.timer_deadlines:
-            raise ValueError("Attempt to bump non-set timer")
-
-        cls.set_timer(game, cls.timer_deadlines[game] + d_delay)
-
-    @classmethod
-    def reset_timer(cls, game, delay):
-        """
-        Reset move timer for `game` to fire `delay` seconds in the future
-        """
-
-        cls.set_timer(game, cls.get_ioloop().time() + delay)
-
-    @classmethod
-    def set_timer(cls, game, deadline):
-        """
-        Reset move timer for `game` to fire at the moment specified by `deadline`
-        """
-
-        ioloop = cls.get_ioloop()
-
-        if game in cls.timers:
-            ioloop.remove_timeout(cls.timers[game])
-
-        cls.timers[game] = ioloop.call_at(deadline, lambda: game.handle_timer_runout())
-        cls.timer_deadlines[game] = deadline
-
-        game.handle_timer_set(deadline - ioloop.time())
-
-    @classmethod
-    def pause_timer(cls, game):
-        """
-        Pause move timer for `game` and save its current delay for further resumption
-        """
-
-        if game in cls.paused_timer_delays:
-            # Already paused
-            return
-
-        if game not in cls.timer_deadlines:
-            raise ValueError("Attempt to pause a non-running timer")  # TODO: see if possible
-
-        ioloop = cls.get_ioloop()
-
-        cls.paused_timer_delays[game] = cls.timer_deadlines[game] - ioloop.time()
-
-        ioloop.remove_timeout(cls.timers[game])
-
-    @classmethod
-    def resume_timer(cls, game):
-        """
-        Resume the previously paused move timer for `game` by setting it with a previously saved delay plus a small
-        handicap.
-        """
-
-        if game not in cls.paused_timer_delays:
-            raise ValueError("Attempt to resume a non-paused timer")
-
-        delay = cls.paused_timer_delays[game]
-
-        del cls.paused_timer_delays[game]
-
-        cls.set_timer(game, cls.get_ioloop().time() + delay + 1.5)
 
     def data_received(self, chunk):
         pass

@@ -158,7 +158,7 @@ const fTimer = (state=null, action) => {
             });
         }
     }
-    else if(action.type === 'STATE DELTA' && action.change === 'SET TIMER') {
+    else if(action.type === 'STATE DELTA' && action.change === 'timer-move-set') {
         if(state !== null) {
             clearInterval(state.interval);
         }

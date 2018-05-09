@@ -17,7 +17,7 @@ const createDisconnectTickInteval = (store, iPlayer) => {
 };
 
 export const processTimerActions = (store => next => action => {
-    if(action.type === 'STATE DELTA' && action.change === 'SET TIMER') {
+    if(action.type === 'STATE DELTA' && action.change === 'timer-move-set') {
         action.newInterval = createMoveTickInterval(store);
     }
     else if(action.type === 'player-disconnected') {
