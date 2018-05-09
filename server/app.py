@@ -441,8 +441,7 @@ def launch_application():
 
             client_app.listen(80)
 
-            # If successful, don't serve it on the specified port
-            client_path = None
+            client_path = None  # If successful, don't serve it on the specified port
         except SocketError as e:
             logging.warn("Failed to listen on port 80 -- will serve static on the websocket server's port instead")
 

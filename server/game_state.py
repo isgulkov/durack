@@ -113,6 +113,7 @@ class GameState:
     logger = logging.getLogger('durack/game')
 
     MOVE_TIME = 10.1
+    END_INIT_TIME = 5.1
     BUMP_TIME = 3
 
     # Creation and initialization
@@ -143,7 +144,7 @@ class GameState:
 
         self.bottom_card = bottom_card
 
-        self.end_move_votes = [False for _ in players]
+        self.end_move_votes = [False for _ in players]  # TODO: why is this by player index again?
 
         self._update_handlers = set()
 
@@ -649,6 +650,8 @@ class GameState:
 
                 if not self._follow_phase_will_continue():
                     self._end_follow_phase()
+            else:
+                raise IllegalMoveException(move, self.as_dict())
         else:
             raise ValueError("Unknown type of move `%s`" % move['action'])
 
@@ -673,10 +676,11 @@ class GameState:
 
         self._send_remove_from_hand(player_uid, card)
 
-        if self.phase == 'init' and not self._put_possible(player_uid):
-            self._end_init_phase()
-        else:
+        if self.phase == 'follow':
             self._move_timer.bump(self.BUMP_TIME)
+        else:
+            if self._move_timer.delay > self.END_INIT_TIME:
+                self._move_timer.reset(self.END_INIT_TIME)
 
         self._reset_all_end_move_votes()
 
@@ -1179,6 +1183,8 @@ class GameState:
             'timer': {
                 'numSeconds': self._move_timer.delay
             },
+
+            'optedEndMove': self.end_move_votes[self._index_of_player(player_uid)],
 
             'playedDeckSize': len(self.played_deck),
 
