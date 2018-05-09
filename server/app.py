@@ -482,31 +482,53 @@ def get_cookie_secret():
 
 
 class Application(tornado.web.Application):
-    def __init__(self):
+    def __init__(self, client_path=None):
         handlers = [
             (r'/durack_game', GameSocketHandler),
         ]
 
-        if options.client_path is not None:
+        if client_path is not None:
             handlers.append(
                 (r'/(.*)', tornado.web.StaticFileHandler, {
-                    'path': options.client_path,
+                    'path': client_path,
                     'default_filename': "index.html"
                 }),
             )
 
-        settings = dict(
-            cookie_secret=get_cookie_secret(),
-            # xsrf_cookies=True,
+        super(Application, self).__init__(
+            handlers,
+            cookie_secret = get_cookie_secret()
         )
-
-        super(Application, self).__init__(handlers, **settings)
 
 
 def launch_application():
     tornado.options.parse_command_line()
 
-    app = Application()
+    client_path = options.client_path
+
+    if client_path is not None and options.port != 80:
+        # Try to serve static on port 80 anyway
+
+        from socket import error as SocketError
+
+        try:
+            client_app = Application((
+                (r'/(.*)', tornado.web.StaticFileHandler, {
+                    'path': client_path,
+                    'default_filename': "index.html"
+                }),
+            ))
+
+            client_app.listen(80)
+
+            # If successful, don't serve it on the specified port
+            client_path = None
+        except SocketError as e:
+            logging.warn("Failed to listen on port 80 -- will serve static on the websocket server's port instead")
+
+            pass
+
+    app = Application(client_path=client_path)
     app.listen(options.port)
 
     tornado.ioloop.IOLoop.current().start()
