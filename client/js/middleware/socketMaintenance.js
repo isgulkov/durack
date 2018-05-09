@@ -1,6 +1,6 @@
 
 const createAndDispatchSocket = (uiStore) => {
-    const socket = new WebSocket('ws://' + location.host + ':8888/durack_game');
+    const socket = new WebSocket('ws://' + location.hostname + ':8888/durack_game');
 
     socket.onopen = () => {
         uiStore.dispatch({
