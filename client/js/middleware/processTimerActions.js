@@ -20,7 +20,7 @@ export const processTimerActions = (store => next => action => {
     if(action.type === 'STATE DELTA' && action.change === 'SET TIMER') {
         action.newInterval = createMoveTickInterval(store);
     }
-    else if(action.type === 'PLAYER DISCONNECTED') {
+    else if(action.type === 'player-disconnected') {
         action.interval = createDisconnectTickInteval(store, action.iPlayer)
     }
     else if(action.type === 'init-player(in-game)' || action.type === 'INITIALIZE GAME') {

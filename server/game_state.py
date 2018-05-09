@@ -942,7 +942,7 @@ class GameState:
                 continue
 
             self._send_update(uid, {
-                'type': 'PLAYER DISCONNECTED',
+                'type': 'player-disconnected',
                 'iPlayer': self._relative_index_of_other_player(uid, player_uid),
                 'secondsLeft': reconnect_time
             })
@@ -957,7 +957,7 @@ class GameState:
                 continue
 
             self._send_update(uid, {
-                'type': 'PLAYER RECONNECTED',
+                'type': 'player-reconnected',
                 'iPlayer': self._relative_index_of_other_player(uid, player_uid)
             })
 
@@ -971,7 +971,7 @@ class GameState:
                 continue
 
             self._send_update(uid, {
-                'type': 'PLAYER TIMED OUT',
+                'type': 'player-timed-out',
                 'iPlayer': self._relative_index_of_other_player(uid, player_uid)
             })
 

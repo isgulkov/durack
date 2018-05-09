@@ -186,7 +186,7 @@ const fOptedEndMove = (state=false, action) => {
 };
 
 const fPlayersDisconnected = (state={}, action) => {
-    if(action.type === 'PLAYER DISCONNECTED') {
+    if(action.type === 'player-disconnected') {
         let newState = Object.assign({}, state);
 
         newState[action.iPlayer] = {
@@ -203,7 +203,7 @@ const fPlayersDisconnected = (state={}, action) => {
 
         return newState;
     }
-    else if(action.type === 'PLAYER RECONNECTED' || action.type === 'PLAYER TIMED OUT') {
+    else if(action.type === 'player-reconnected' || action.type === 'player-timed-out') {
         let newState = Object.assign({}, state);
 
         clearInterval(newState[action.iPlayer].interval);
