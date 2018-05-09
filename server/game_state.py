@@ -108,6 +108,8 @@ class GameState:
     Represents the collective state of a game between several players.
     """
 
+    logger = logging.getLogger('durack/game')
+
     # Creation and initialization
 
     def __init__(self, players, player_hands, table_stacks, leftover_deck, played_deck, bottom_card):
@@ -257,11 +259,6 @@ class GameState:
 
         self._send_initialize(player_uid)
 
-        if self._game_has_ended():
-            self._send_game_end()
-
-            return
-
         if player_uid in self.disconnected_players:
             self.disconnected_players.remove(player_uid)
 
@@ -269,6 +266,8 @@ class GameState:
 
             if len(self.disconnected_players) == 0:
                 self._resume_timer()
+        else:
+            self.logger.error("Reconnect came for %s, who isn't disconnected" % player_uid)
 
     def handle_disconnect_timeout(self, player_uid):
         """

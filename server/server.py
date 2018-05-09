@@ -64,7 +64,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
     matchmaking_pool = set()
 
     running_games = {}
-    player_states = {}
+    player_states = {}  # TODO: type hint this
 
     timers = {}
     timer_deadlines = {}
@@ -92,7 +92,19 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
         cls.connection_with[player].add(connection)
 
-        print player.nickname, len(cls.connection_with[player]), [str(c) for c in cls.connection_with[player]]
+        print "+", player.nickname, len(cls.connection_with[player]), [str(c) for c in cls.connection_with[player]]
+
+    @classmethod
+    def remove_connection_with(cls, player, connection):
+        if player not in cls.connection_with:
+            return
+
+        if connection not in cls.connection_with[player]:
+            return
+
+        cls.connection_with[player].remove(connection)
+
+        print "-", player.nickname, len(cls.connection_with[player]), [str(c) for c in cls.connection_with[player]]
 
     def set_uid_cookie(self, uid):
         self.write_message(json.dumps({
@@ -102,6 +114,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
         s_uid = self.get_secure_cookie('player-uid')
+
+        self.logger.info("Connection from %s" % self)
 
         player = None
 
@@ -128,48 +142,60 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             self.logger.info("New player online, init their state with %s" % player_state.as_init_action())
 
             self.player_states[player] = player_state
-
-        if player in self.disconnect_timers:
-            self.handle_reconnect(player)  # TODO: later
+        elif player in self.disconnect_timers:
+            self.player_reconnected(player)
+        else:
+            self.logger.debug("Got a new connection with %s" % player)
 
     def on_close(self):
-        identity = self._identity
+        if not hasattr(self, '_player'):
+            self.logger.error("Socket %s doesn't have a player attached to it" % self)
+            return
 
-        # TODO: fucking something...
-        # if identity in self.connection_with:
-        #     del self.connection_with[identity]
+        player = self._player
 
-        if identity in self.matchmaking_pool:
-            self.remove_from_matchmaking_pool(identity)
-        elif identity in self.running_games:
-            game = self.running_games[identity]
+        if self in self.connection_with[player]:
+            self.connection_with[player].remove(self)
 
-            RECONNECT_TIME = 5  # TODO: ~30
-
-            game.handle_disconnect(identity, RECONNECT_TIME)
-
-            disconnect_timer = self.get_ioloop().call_later(RECONNECT_TIME, lambda: game.handle_disconnect_timeout(identity))
-
-            self.disconnect_timers[identity] = disconnect_timer
+            if len(self.connection_with[player]) == 0:
+                self.player_disconnected(player)
 
     @staticmethod
     def get_ioloop():
         return tornado.ioloop.IOLoop.current()
 
     @classmethod
-    def handle_reconnect(cls, uid):
-        cls.get_ioloop().remove_timeout(cls.disconnect_timers[uid])
+    def player_reconnected(cls, player):
+        cls.get_ioloop().remove_timeout(cls.disconnect_timers[player])
 
-        del cls.disconnect_timers[uid]
+        del cls.disconnect_timers[player]
 
-        cls.running_games[uid].handle_reconnect(uid)
+        state = cls.player_states[player]
+
+        if state.is_looking_for_game():
+            cls.add_to_matchmaking_pool(player)
+        elif state.is_in_game():
+            state.get_game().handle_reconnect(player)
 
     @classmethod
-    def handle_disconnect(cls, uid):
-        cls.running_games[uid].handle_disconnect(uid)
+    def player_disconnected(cls, player):
+        if player not in cls.player_states:
+            return
 
-        del cls.running_games[uid]
-        del cls.disconnect_timers[uid]
+        state = cls.player_states[player]
+
+        RECONNECT_TIME = 20  # TODO: make a global constant or a config var
+
+        if state.is_looking_for_game():
+            cls.remove_from_matchmaking_pool(player)
+        elif state.is_in_game():
+            state.get_game().handle_disconnect(player, RECONNECT_TIME)
+
+        cls.disconnect_timers[player] = cls.get_ioloop().call_later(RECONNECT_TIME, cls.player_timed_out, player)
+
+    @classmethod
+    def player_timed_out(cls, player):
+        pass
 
     # Matchmaking
 
@@ -339,7 +365,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             connection.write_message(msg)
         except tornado.websocket.WebSocketClosedError:
             if call_handler_on_disconnect:
-                cls.handle_disconnect(player)
+                cls.player_disconnected(player)
 
     @classmethod
     def handle_game_end(cls, game, players):
@@ -357,7 +383,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
             cls.send_msg_to_player(p, cls.player_states[p].as_init_action())
 
-        cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_games(game, players))
+        cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_game(game, players))
 
     @classmethod
     def initialize_game(cls, players):
