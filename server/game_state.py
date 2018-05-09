@@ -128,7 +128,8 @@ class GameState:
         self.players = players
         self.player_hands = player_hands
 
-        self.in_game = {uid: True for uid, name in self.players}
+        self.is_playing = {uid: True for uid, name in self.players}
+        self.is_watching = {uid: True for uid, name in self.players}
 
         self.table_stacks = table_stacks
 
@@ -275,7 +276,7 @@ class GameState:
         other players are disconnected.
         """
 
-        # TODO: unsubscribe already timed out players from updates from this game
+        self.is_watching[player_uid] = False
 
         self._send_timed_out(player_uid)
 
@@ -390,7 +391,7 @@ class GameState:
         i_next_player = self._index_of_player(self.spotlight) + 1
         i_next_player %= len(self.players)
 
-        while not self.in_game[self.players[i_next_player][0]]:
+        while not self.is_playing[self.players[i_next_player][0]]:
             # Skip out of game players
 
             i_next_player += 1
@@ -433,6 +434,8 @@ class GameState:
             return False
 
         if not any(uid == player_uid for uid, _ in self.players):
+            # TODO: just check if it's in `self.player_hands` for now?
+
             return False
 
         if card not in self.player_hands[player_uid]:
@@ -568,7 +571,7 @@ class GameState:
         Return whether the game should be declared finished at this point
         """
 
-        return sum(1 for uid, name in self.players if self.in_game[uid]) <= 1
+        return sum(1 for uid, name in self.players if self.is_playing[uid]) <= 1
 
     def _is_frozen(self):
         return self.frozen
@@ -730,7 +733,7 @@ class GameState:
         i_next %= len(self.players)
 
         # Skip out of game players
-        while not self.in_game[self.players[i_next][0]]:
+        while not self.is_playing[self.players[i_next][0]]:
             i_next += 1
             i_next %= len(self.players)  # Loop back
 
@@ -777,7 +780,7 @@ class GameState:
         additional_cards = [[] for _ in players]
 
         for i, (uid, name) in enumerate(players):
-            if not self.in_game[uid]:
+            if not self.is_playing[uid]:
                 continue
 
             while len(self.player_hands[uid]) + len(additional_cards[i]) < 6 and len(self.leftover_deck) != 0:
@@ -831,7 +834,7 @@ class GameState:
 
         # Mark players that have no cards left after the handout as out of game
         for uid, name in self.players:
-            if self.in_game[uid] and len(self.player_hands[uid]) == 0:
+            if self.is_playing[uid] and len(self.player_hands[uid]) == 0:
                 self._apply_player_out_of_game(uid)
 
                 self._send_player_out_of_game(uid)
@@ -843,7 +846,7 @@ class GameState:
             return
 
         # Advance spotlight only if the former defending player went out of game, otherwise it's his turn now
-        if not self.in_game[self.spotlight]:
+        if not self.is_playing[self.spotlight]:
             self._advance_spotlight()
 
         self._reset_timer()
@@ -855,7 +858,7 @@ class GameState:
         Note: is is assumed that the player is in game.
         """
 
-        self.in_game[player_uid] = False
+        self.is_playing[player_uid] = False
 
         if disconnect:
             self.order_disconnected.append(player_uid)
@@ -872,7 +875,7 @@ class GameState:
         loser = None
 
         for player, name in self.players:
-            if self.in_game[player]:
+            if self.is_playing[player]:
                 loser, loser_nickname = player, name
                 break
 
@@ -900,6 +903,18 @@ class GameState:
 
     # Client state update
 
+    @property
+    def current_players(self):
+        """
+        Yield only the players currently watching the game (i.e. receiving updates)
+        """
+
+        # TODO: handle this outside the game state and in the server?
+
+        for uid, name in self.players:
+            if self.is_watching[uid]:
+                yield uid, name
+
     def _send_update(self, player_uid, msg):
         """
         Update *the specified player* on the delta `msg`
@@ -913,7 +928,7 @@ class GameState:
         Update *all players* on the delta `msg`
         """
 
-        for uid, name in self.players:
+        for uid, name in self.current_players:
             self._send_update(uid, msg)
 
     def _send_disconnected(self, player_uid, reconnect_time):
@@ -922,7 +937,7 @@ class GameState:
         reconnect.
         """
 
-        for uid, name in self.players:
+        for uid, name in self.current_players:
             if uid == player_uid:
                 continue
 
@@ -937,7 +952,7 @@ class GameState:
         Update *each player* that the specified player has reconnected.
         """
 
-        for uid, name in self.players:
+        for uid, name in self.current_players:
             if uid == player_uid:
                 continue
 
@@ -951,7 +966,7 @@ class GameState:
         Update *each player* that the specified player has timed out and is thus now out of the game.
         """
 
-        for uid, name in self.players:
+        for uid, name in self.current_players:
             if uid == player_uid:
                 continue
 
@@ -1003,7 +1018,7 @@ class GameState:
         Update *each player* on the current spotlight position, providing its relative index.
         """
 
-        for uid, name in self.players:
+        for uid, name in self.current_players:
             self._send_update(uid, {
                 'change': 'SPOTLIGHT',
                 'iSpotlight': self._relative_index_of_other_player(uid, self.spotlight)
@@ -1026,7 +1041,7 @@ class GameState:
         only provided with the player's relative index.
         """
 
-        for i, (uid, name) in enumerate(self.players):
+        for i, (uid, name) in enumerate(self.current_players):
             if player_uid == uid:
                 self._send_update(uid, {
                     'change': 'REMOVE FROM PLAYER HAND',
@@ -1046,7 +1061,7 @@ class GameState:
         the corresponding opponent's hand.
         """
 
-        for i, (uid, name) in enumerate(self.players):
+        for i, (uid, name) in enumerate(self.current_players):
             if player_uid == uid:
                 self._send_update(uid, {
                     'change': 'ADD TO PLAYER HAND',
@@ -1063,7 +1078,7 @@ class GameState:
         """
         Update *all players* on all the table stacks being removed from the table.
         """
-        for uid, name in self.players:
+        for uid, name in self.current_players:
             self._send_update(uid, {
                 'change': 'CLEAR TABLE'
             })
@@ -1093,7 +1108,7 @@ class GameState:
         To each provide the relative index of the player in their respective views.
         """
 
-        for uid, name in self.players:
+        for uid, name in self.current_players:
             self._send_update(uid, {
                 'change': 'PLAYER OUT OF GAME',
                 'iPlayer': self._relative_index_of_other_player(uid, player_uid)
@@ -1112,10 +1127,6 @@ class GameState:
         """
 
         loser = self.end_summary['loser']
-
-        print
-        print loser, player, player == loser
-        print
 
         if loser is None:
             loser_nickname = None
@@ -1181,7 +1192,7 @@ class GameState:
                 {
                     'nickname': name,
                     'numCards': len(self.player_hands[uid]),
-                    'inGame': self.in_game[uid]
+                    'inGame': self.is_playing[uid]
                 } for (uid, name) in shifted_opponents
             ],
 

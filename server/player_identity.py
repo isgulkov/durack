@@ -25,7 +25,7 @@ class PlayerIdentity(object):
         return hash(self.uid)
 
     def __str__(self):
-        return repr(self)
+        return "<PlayerID {}>".format(self._nickname.encode('utf-8'))
 
     def __repr__(self):
         return "<PlayerID {}, {}, {} played, {} won>".format(
