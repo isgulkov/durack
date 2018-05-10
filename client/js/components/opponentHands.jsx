@@ -14,7 +14,7 @@ class NicknameBox extends React.Component {
 
                 'opacity': this.props.isInGame ? 1.0 : 0.5
             }}>
-                <div style={{
+                <div className='noselect' style={{
                     'position': 'relative',
                     'left': '-50%',
 

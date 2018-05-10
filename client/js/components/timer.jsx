@@ -18,9 +18,7 @@ class Timer extends React.Component {
             'color': 'black',
             'textAlign': 'center',
             'verticalAlign': 'middle',
-            'lineHeight': '32px',
-
-            'userSelect': 'none'
+            'lineHeight': '32px'
         }
     }
 
@@ -32,7 +30,7 @@ class Timer extends React.Component {
         }
 
         return (
-            <div style={this.getStyle()}>
+            <div className='noselect' style={this.getStyle()}>
                 {getTimeString(timer.numSeconds)}
             </div>
         )

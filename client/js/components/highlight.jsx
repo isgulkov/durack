@@ -18,9 +18,7 @@ class Highlight extends React.Component {
             'textAlign': 'center',
             'verticalAlign': 'middle',
             'lineHeight': this.props.height + 'px',
-            'padding': 0,
-
-            'userSelect': 'none'
+            'padding': 0
         }
     }
 
@@ -32,7 +30,7 @@ class Highlight extends React.Component {
 
     render() {
         return (
-            <div className='clickable' style={this.getStyle()} onClick={() => this.handleClick()}>
+            <div className='clickable noselect' style={this.getStyle()} onClick={() => this.handleClick()}>
                 {this.props.text || ""}
             </div>
         )
