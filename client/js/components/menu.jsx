@@ -29,13 +29,29 @@ class FindGameBlock extends React.Component {
 }
 
 class Menu extends React.Component {
-    static getContainerStyle() {
-        return {
-            'position': 'fixed',
-            'top': '200px',
-            'width': '100%',
-            'textAlign': 'center'
-        };
+    getContainerStyle() {
+        const status = this.props.state.status;
+
+        const TOP_OFFSET = 200;
+
+        if(status === 'initial' || status === 'looking') {
+            const GAME_HEIGHT = 600; // TODO: share with the game field, pass from ui
+
+            return {
+                'width': '100%',
+                'height': GAME_HEIGHT - TOP_OFFSET,
+
+                'margin': '40px auto',
+                'paddingTop': TOP_OFFSET
+            };
+        }
+        else {
+            return {
+                'position': 'fixed',
+                'top': TOP_OFFSET,
+                'width': '100%'
+            };
+        }
     }
 
     static getMenuStyle() {
@@ -43,12 +59,13 @@ class Menu extends React.Component {
             'margin': '0 auto',
             'maxWidth': '300px',
             'padding': '25px',
-            'background': 'white'
+            'background': 'white',
+            'textAlign': 'center'
         };
     }
 
     render() {
-        let menuState = this.props.state;
+        const menuState = this.props.state;
 
         if(!menuState.isDisplayed) {
             return null;
@@ -81,7 +98,7 @@ class Menu extends React.Component {
         }
 
         return (
-            <div style={Menu.getContainerStyle()}>
+            <div style={this.getContainerStyle()}>
                 <div style={Menu.getMenuStyle()}>
                     { findGameBlock }
                     { changeNameBlock }

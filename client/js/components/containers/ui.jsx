@@ -6,6 +6,8 @@ import { Menu } from "../menu";
 import { Game } from "../game";
 import { DisconnectMsg } from "../disconnectMsg";
 
+import { VERSION_STRING } from "../../config";
+
 class _GameUi extends React.Component {
     render() {
         // console.log("Will re-render Ui with new state", this.props.state);
@@ -17,6 +19,7 @@ class _GameUi extends React.Component {
                 <Game state={currentState.game} />
                 <Menu state={currentState.menu} />
                 { currentState.socket === null ? <DisconnectMsg /> : null }
+                <div className='footer'>Durack { VERSION_STRING }</div>
             </div>
         );
     }
