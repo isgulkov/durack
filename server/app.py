@@ -10,7 +10,6 @@ import tornado.websocket
 from tornado.options import define, options
 
 define("port", default=8888, help="run on the given port", type=int)
-define("client_path", default=None, help="path to the static files of the client app")
 
 from player_state import PlayerState
 from game_state import GameState, IllegalMoveException
@@ -401,53 +400,12 @@ def get_cookie_secret():
         return f.read()
 
 
-class Application(tornado.web.Application):
-    def __init__(self, client_path=None):
-        handlers = [
-            (r'/durack_game', GameSocketHandler),
-        ]
-
-        if client_path is not None:
-            handlers.append(
-                (r'/(.*)', tornado.web.StaticFileHandler, {
-                    'path': client_path,
-                    'default_filename': "index.html"
-                }),
-            )
-
-        super(Application, self).__init__(
-            handlers,
-            cookie_secret = get_cookie_secret()
-        )
-
-
 def launch_application():
     tornado.options.parse_command_line()
 
-    client_path = options.client_path
-
-    if client_path is not None and options.port != 80:
-        # Try to serve static on port 80 anyway
-
-        from socket import error as SocketError
-
-        try:
-            client_app = Application((
-                (r'/(.*)', tornado.web.StaticFileHandler, {
-                    'path': client_path,
-                    'default_filename': "index.html"
-                }),
-            ))
-
-            client_app.listen(80)
-
-            client_path = None  # If successful, don't serve it on the specified port
-        except SocketError as e:
-            logging.warn("Failed to listen on port 80 -- will serve static on the websocket server's port instead")
-
-            pass
-
-    app = Application(client_path=client_path)
+    app = tornado.web.Application([
+            (r'/durack_game', GameSocketHandler),
+        ], cookie_secret = get_cookie_secret())
     app.listen(options.port)
 
     tornado.ioloop.IOLoop.current().start()
