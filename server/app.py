@@ -11,6 +11,8 @@ from tornado.options import define, options
 
 define("port", default=8888, help="run on the given port", type=int)
 
+from mm_pool import MatchmakingPool
+
 from player_state import PlayerState
 from game_state import GameState, IllegalMoveException
 
@@ -31,17 +33,23 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
     logger.addHandler(sh)
 
-    matchmaking_pool = set()
-
     running_games = {}  # TODO: old -- replace with access through `self.player_states`
     player_states = {}  # TODO: type hint this
+
+    mm_pool = MatchmakingPool()
+
+    def __init__(self, application, request, **kwargs):
+        # TODO: get rid of this when defined in a game server object
+
+        self.mm_pool.on_update(self.update_num_looking_for_game)
+        self.mm_pool.on_match(self.initialize_game)
+
+        super(GameSocketHandler, self).__init__(application, request, **kwargs)
 
     connection_with = {}
     queue_for = {}
 
     disconnect_timeouts = {}
-
-    MIN_NUM_PLAYERS = 2  # TODO: Apply some logic to it
 
     def check_origin(self, origin):
         # TODO: serve client page through Tornado so this can be removed
@@ -139,7 +147,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         state = cls.player_states[player]
 
         if state.is_looking_for_game():
-            cls.add_to_matchmaking_pool(player)
+            cls.mm_pool.add_player(player)
         elif state.is_in_game():
             state.get_game().handle_reconnect(player)
 
@@ -153,7 +161,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         RECONNECT_TIME = 20  # TODO: make a global constant or a config var
 
         if state.is_looking_for_game():
-            cls.remove_from_matchmaking_pool(player)
+            cls.mm_pool.remove_player(player)
         elif state.is_in_game():
             state.get_game().handle_disconnect(player, RECONNECT_TIME)
 
@@ -171,41 +179,36 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         del cls.player_states[player]
 
     # Matchmaking
-
     @classmethod
-    def update_num_looking_for_game(cls):
-        for player in cls.matchmaking_pool:
+    def update_num_looking_for_game(cls, num_looking_for_game):
+        for player in cls.mm_pool.pool:
             cls.send_msg_to_player(player, {
                 'type': 'update-looking-for-game(num)',
-                'numLooking': len(cls.matchmaking_pool)
+                'numLooking': num_looking_for_game
             })
 
     @classmethod
-    def remove_from_matchmaking_pool(cls, player):
-        if player in cls.matchmaking_pool:
-            cls.matchmaking_pool.remove(player)
+    def initialize_game(cls, players):
+        print "PIDORS: %s" % players
 
-            cls.update_num_looking_for_game()
+        new_state = GameState.create_random([(player, player.nickname) for player in players])
 
-    @classmethod
-    def add_to_matchmaking_pool(cls, player):
-        cls.logger.info("Will add %s to the matchmaking pool" % player)
+        new_state.add_update_handler(lambda p, msg: cls.send_msg_to_player(p, msg))
 
-        cls.matchmaking_pool.add(player)
+        new_state.update_end_game_callback(
+            lambda identities: cls.handle_game_end(new_state, identities)
+        )
 
-        cls.update_num_looking_for_game()
+        for player in players:
+            cls.running_games[player] = new_state
 
-        cls.logger.info("Pool is now of size %d: %s" % (len(cls.matchmaking_pool), cls.matchmaking_pool))
+            cls.player_states[player] = PlayerState.get_in_game(player, new_state)
 
-        if len(cls.matchmaking_pool) >= cls.MIN_NUM_PLAYERS:
-            new_players = []
+            cls.send_msg_to_player(player, cls.player_states[player].as_init_action())
 
-            while len(new_players) < 6 and len(cls.matchmaking_pool) != 0:
-                new_players.append(cls.matchmaking_pool.pop())
+        new_state.start()
 
-            cls.initialize_game(new_players)
-
-            cls.logger.info("Following %d players matched: %s" % (len(new_players), new_players))
+    ##
 
     def set_nickname(self, nickname):
         if not (0 < len(nickname) <= 64):
@@ -256,12 +259,12 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                     self.logger.warn("Player %s is in %s, should be in initial" % (player, self.player_states[player].as_short_str() ))
                     return
 
-                self.player_states[player] = PlayerState.get_looking_for_game(player, self.matchmaking_pool)
+                self.player_states[player] = PlayerState.get_looking_for_game(player, self.mm_pool)
 
                 # TODO: transition from initial to lfg instead of init into lfg!
                 self.send_msg_to_player(player, self.player_states[player].as_init_action())
 
-                self.add_to_matchmaking_pool(player)
+                self.mm_pool.add_player(player)
             elif msg['kind'] == 'act-looking-for-game(stop)':
                 if not self.player_states[player].is_looking_for_game():
                     self.logger.warn("Player %s isn't looking for game" % (player,))
@@ -271,7 +274,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
                 self.send_msg_to_player(player, self.player_states[player].as_init_action())
 
-                self.remove_from_matchmaking_pool(player)
+                self.mm_pool.remove_player(player)
             elif msg['kind'] == 'act-finish-game':
                 if not self.player_states[player].is_after_game():
                     self.logger.warn("Player %s isn't in a game that has ended" % (player,))
@@ -363,25 +366,6 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 cls.send_msg_to_player(p, cls.player_states[p].as_init_action())
 
         cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_game(game, players))
-
-    @classmethod
-    def initialize_game(cls, players):
-        new_state = GameState.create_random([(player, player.nickname) for player in players])
-
-        new_state.add_update_handler(lambda p, msg: cls.send_msg_to_player(p, msg))
-
-        new_state.update_end_game_callback(
-            lambda identities: cls.handle_game_end(new_state, identities)
-        )
-
-        for player in players:
-            cls.running_games[player] = new_state
-
-            cls.player_states[player] = PlayerState.get_in_game(player, new_state)
-
-            # cls.send_msg_to_player(player, cls.player_states[player].as_init_action())
-
-        new_state.start()
 
     def data_received(self, chunk):
         pass

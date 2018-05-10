@@ -81,7 +81,7 @@ class PlayerState:
         elif self.root == self.LookingForGame:
             action = {
                 'type': 'init-player(looking-for-game)',
-                'numLooking': len(self.vars['pool'])
+                'numLooking': self.vars['pool'].num_looking_for_game
             }
         elif self.root == self.InGame:
             action = {
