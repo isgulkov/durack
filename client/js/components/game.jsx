@@ -56,7 +56,8 @@ class Game extends React.Component {
                                  // TODO: rename to `selectedDefendCard` or something
                                  defendMoveCard={gameState.defendMoveCard}
                                  totalWidth={TABLE_WIDTH}
-                                 totalHeight={TABLE_HEIGHT} />
+                                 totalHeight={TABLE_HEIGHT}
+                                 playersNickname={this.props.playersNickname} />
 
                     <CardsOnTable tableStacks={gameState.tableStacks}
                                   isDefendMove={gameState.defendMoveCard !== null}

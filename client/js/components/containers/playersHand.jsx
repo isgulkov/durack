@@ -6,6 +6,35 @@ import { CARD_WIDTH, CARD_HEIGHT } from "../utility/cardSprite";
 import { Card } from "../card";
 import { Highlight } from "../highlight";
 
+class BigNickname extends React.Component {
+    render() {
+        return (
+            <div style={{
+                'position': 'absolute',
+                'left': this.props.totalWidth / 2,
+                'bottom': 15,
+
+                'opacity': this.props.isInGame ? 1.0 : 0.5
+            }}>
+                <div className='noselect' style={{
+                    'position': 'relative',
+                    'left': '-50%',
+
+                    'background': 'rgba(255, 255, 255, 0.25)',
+
+                    'font': '22px Helvetica, sans-serif',
+                    'textAlign': 'center',
+
+                    'padding': '0 5px'
+                }}
+                >
+                    {this.props.nickname}
+                </div>
+            </div>
+        );
+    }
+}
+
 class _PlayersHand extends React.Component {
     render() {
         const playersCards = this.props.playersCards;
@@ -46,6 +75,9 @@ class _PlayersHand extends React.Component {
             <div>
                 { cards }
                 { defendCardHighLight }
+                <BigNickname nickname={this.props.playersNickname}
+                             totalWidth={this.props.totalWidth}
+                             isInGame={true} />
             </div>
         )
     }

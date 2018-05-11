@@ -16,7 +16,8 @@ class _GameUi extends React.Component {
 
         return (
             <div>
-                <Game state={currentState.game} />
+                <Game state={currentState.game}
+                      playersNickname={currentState.menu.currentNickname} />
                 <Menu state={currentState.menu} />
                 { currentState.socket === null ? <DisconnectMsg /> : null }
                 <div className='footer'>Durack { VERSION_STRING }</div>
