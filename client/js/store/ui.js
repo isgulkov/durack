@@ -26,9 +26,18 @@ const fIsInitialized = (state=false, action) => {
     return state;
 };
 
+const fHaveConnected = (state=false, action) => {
+    if(action.type === 'SOCKET READY') {
+        return true;
+    }
+
+    return state;
+};
+
 export const fUiState = combineReducers({
     game: fGame,
     menu: fMenu,
     socket: fSocket,
+    haveConnected: fHaveConnected,
     isInitialized: fIsInitialized
 });

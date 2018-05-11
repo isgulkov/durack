@@ -33,6 +33,27 @@ div.paragraph {
     margin-bottom: 1em;
 }
 
+div.disconnect-msg {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+
+    background: red;
+
+    color: white;
+    text-align: center;
+
+    font-size: 16px;
+}
+
+div.disconnect-msg.connect-first {
+    background: #00ff00;
+
+    color: black;
+}
+
 .children-default-cursor div {
     cursor: default;
 }
