@@ -76,7 +76,12 @@ class PlayerState:
             action = {
                 'type': 'init-player(initial)',
                 'mmDeck': self.player.mm_deck,
-                'mmMinPlayers': self.player.mm_min_players
+                'mmMinPlayers': self.player.mm_min_players,
+                'playerStats': {
+                    'numPlayed': self.player.num_played,
+                    'numWon': self.player.num_won,
+                    'numLeft': self.player.num_left
+                }
             }
         elif self.root == self.LookingForGame:
             action = {

@@ -171,24 +171,24 @@ class GameState:
         Return an initial game state with the deck shuffled and players in random order.
         """
 
-        deck = Card.get_shuffled_deck(size=int(deck[:2]))
+        current_deck = Card.get_shuffled_deck(size=int(deck[:2]))
 
-        bottom_card = deck[0]
+        bottom_card = current_deck[0]
 
         player_hands = {}
 
         for uid, name in players:
-            player_hands[uid] = set(deck.pop() for _ in xrange(6))
+            player_hands[uid] = set(current_deck.pop() for _ in xrange(6))
 
         if deck[-4:] == 'fast':
-            deck = deck[:len(players)]
+            current_deck = current_deck[:len(players)]
 
         ordered_players = list(players)
         urandom_shuffle_inplace(ordered_players)
 
         cls._choose_first_player(bottom_card.suit, ordered_players, player_hands)
 
-        return GameState(ordered_players, player_hands, [], deck, [], bottom_card)
+        return GameState(ordered_players, player_hands, [], current_deck, [], bottom_card)
 
     @staticmethod
     def _choose_first_player(trump_suit, players, player_hands):

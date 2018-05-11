@@ -93,6 +93,14 @@ const fChangingNickname = (state=false, action) => {
     return state;
 };
 
+const fPlayerStats = (state=null, action) => {
+    if(action.type === 'init-player(initial)') {
+        return action.playerStats;
+    }
+
+    return state;
+};
+
 const fEndSummary = (state=null, action) => {
     if(action.type === 'init-player(initial)') {
         return null;
@@ -114,5 +122,6 @@ export const fMenu = combineReducers({
     mmSettings: fMmSettings,
     currentNickname: fCurrentNickname,
     changingNickname: fChangingNickname,
+    playerStats: fPlayerStats,
     endSummary: fEndSummary
 });

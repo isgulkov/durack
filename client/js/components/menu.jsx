@@ -3,6 +3,8 @@ import React from "react";
 import { FindGameBtn, StopLookingBtn } from './containers/findGameButtons';
 import { MatchmakingSettingsBlock } from "./containers/mmSettingsBlock";
 import { ChangeNameBlock } from './containers/changeNameBlock';
+import { PlayerStatsBlock } from "./playerStatsBlock";
+
 import { EndGameBlock } from "./containers/endGameBlock";
 
 class FindGameBlock extends React.Component {
@@ -31,13 +33,9 @@ class FindGameBlock extends React.Component {
 
 class Menu extends React.Component {
     getContainerStyle() {
-        // TODO: use a separate "inGame" prop for this
-
-        const status = this.props.state.status;
-
         const TOP_OFFSET = 200;
 
-        if(status === 'initial' || status === 'looking') {
+        if(!this.props.inGame) {
             const GAME_HEIGHT = 600; // TODO: share with the game field, pass from ui
 
             return {
@@ -57,10 +55,10 @@ class Menu extends React.Component {
         }
     }
 
-    static getMenuStyle() {
+    getMenuStyle() {
         return {
             'margin': '0 auto',
-            // 'maxWidth': '300px',
+            'maxWidth': this.props.inGame ? '300px' : undefined,
             'padding': '25px',
             'background': 'white',
             'textAlign': 'center'
@@ -83,6 +81,7 @@ class Menu extends React.Component {
                     <MatchmakingSettingsBlock currentSettings={menuState.mmSettings} />
                     <ChangeNameBlock isChangingNickname={menuState.changingNickname}
                                      nickname={menuState.currentNickname} />
+                    <PlayerStatsBlock playerStats={menuState.playerStats} />
                 </React.Fragment>
             );
         }
@@ -100,7 +99,7 @@ class Menu extends React.Component {
 
         return (
             <div style={this.getContainerStyle()}>
-                <div style={Menu.getMenuStyle()}>
+                <div style={this.getMenuStyle()}>
                     { menuInnerBlock }
                 </div>
             </div>
