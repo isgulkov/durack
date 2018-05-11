@@ -14,6 +14,20 @@ a.js.sel-var {
     border-bottom: 1px black solid;
 }
 
+div.tooltip {
+    position: fixed;
+    display: none;
+
+    width: 20em;
+    padding: 5px 0.5em;
+
+    border: 1px lightgray solid;
+
+    background: rgba(255, 255, 255, 0.9);
+
+    font-size: 0.8em;
+}
+
 .children-default-cursor div {
     cursor: default;
 }
