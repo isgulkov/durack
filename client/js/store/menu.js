@@ -49,7 +49,7 @@ const fCurrentNickname = (state="", action) => {
     if(action.type === 'init-player(initial)') {
         return action.nickname;
     }
-    else if(action.type === 'CONFIRM SET NICKNAME') {
+    else if(action.type === 'set-nickname-confirm') {
         return action.newNickname;
     }
 
@@ -63,7 +63,7 @@ const fChangingNickname = (state=false, action) => {
     else if(action.type === 'CLICK CHANGE NICKNAME') {
         return true;
     }
-    else if(action.type === 'CONFIRM SET NICKNAME') {
+    else if(action.type === 'set-nickname-confirm') {
         return false;
     }
 

@@ -89,7 +89,7 @@ class DurackGameServer:
             player.nickname = new_nickname
 
         self._send_to_player(player, {
-            'type': 'CONFIRM SET NICKNAME',
+            'type': 'set-nickname-confirm',
             'newNickname': player.nickname
         })
 
@@ -159,12 +159,12 @@ class DurackGameServer:
                     return
 
                 self._remove_player_from_game(self.player_states[player].get_game(), player)
+            elif msg['kind'] == 'set-nickname':
+                self._set_nickname(player, msg['newNickname'])
         elif 'action' in msg:  # old
             identity = self.identity_of[connection]
 
-            if msg['action'] == 'SET NICKNAME':
-                self._set_nickname(identity, msg['newNickname'])
-            elif msg['action'][:4] == 'MOVE':
+            if msg['action'][:4] == 'MOVE':
                 if identity not in self.running_games:
                     logging.warning("Player %s issued a move but doesn't participate in known games")
                     return

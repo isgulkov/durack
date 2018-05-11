@@ -85,7 +85,7 @@ export let ChangeNameBlock = connect(
     {
         sendNewNickname: (newNickname) => {
             return {
-                type: 'SEND SET NICKNAME',
+                type: 'send-set-nickname',
                 newNickname: newNickname
             }
         },

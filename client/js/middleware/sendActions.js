@@ -12,9 +12,9 @@ let sendActionsMiddleware = store => next => action => {
             kind: 'act-looking-for-game(stop)'
         };
     }
-    else if(action.type === 'SEND SET NICKNAME') {
+    else if(action.type === 'send-set-nickname') {
         msg = {
-            action: 'SET NICKNAME',
+            kind: 'set-nickname',
             newNickname: action.newNickname
         }
     }
