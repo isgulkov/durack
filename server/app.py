@@ -19,75 +19,57 @@ from game_state import GameState, IllegalMoveException
 from player_identity import PlayerIdentity
 
 
-class GameSocketHandler(tornado.websocket.WebSocketHandler):
+class DurackGameServer:
     logger = logging.getLogger('durack/server')
 
-    from sys import stdout
+    def __init__(self):
+        self.running_games = {}  # TODO: old -- remove when unnecessary
+        self.player_states = {}  # TODO: type hint this
 
-    logger.setLevel(logging.DEBUG)
+        self.identity_of = {}
+        self.connections_with = {}
+        self.queue_for = {}  # TODO: remove?
 
-    sh = logging.StreamHandler(stdout)
-    sh.setLevel(logging.DEBUG)
+        self.disconnect_timeouts = {}
 
-    sh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        self.mm_pool = MatchmakingPool(on_update=self._update_num_looking_for_game, on_match=self._initialize_game)
 
-    logger.addHandler(sh)
+    @staticmethod
+    def get_ioloop():
+        return tornado.ioloop.IOLoop.current()
 
-    running_games = {}  # TODO: old -- replace with access through `self.player_states`
-    player_states = {}  # TODO: type hint this
+    # Matchmaking pool
 
-    mm_pool = MatchmakingPool()
+    def _update_num_looking_for_game(self, num_looking_for_game):
+        for player in self.mm_pool.players:
+            self._send_to_player(player, {
+                'type': 'update-looking-for-game(num)',
+                'numLooking': num_looking_for_game
+            })
 
-    def __init__(self, application, request, **kwargs):
-        # TODO: get rid of this when defined in a game server object
+    def _initialize_game(self, players):
+        new_state = GameState.create_random([(player, player.nickname) for player in players])
 
-        self.mm_pool.on_update(self.update_num_looking_for_game)
-        self.mm_pool.on_match(self.initialize_game)
+        # TODO: make a separate method "send state delta" so that game only deals in state deltas, not full actions
+        new_state.add_update_handler(lambda p, msg: self._send_to_player(p, msg))
 
-        super(GameSocketHandler, self).__init__(application, request, **kwargs)
+        new_state.update_end_game_callback(
+            lambda players: self._handle_game_end(new_state, players)
+        )
 
-    connection_with = {}
-    queue_for = {}
+        for player in players:
+            self.running_games[player] = new_state  # TODO: old -- remove when unnecessary
 
-    disconnect_timeouts = {}
+            self.player_states[player] = PlayerState.get_in_game(player, new_state)
 
-    def check_origin(self, origin):
-        # TODO: serve client page through Tornado so this can be removed
-        return True
+            self._send_to_player(player, self.player_states[player].as_init_action())
 
-    def get_compression_options(self):
-        # Non-None enables compression with default options.
-        return {}
+        new_state.start()
 
-    @classmethod
-    def add_connection_with(cls, player, connection):
-        if player not in cls.connection_with:
-            cls.connection_with[player] = set()
+    # Identity
 
-        cls.connection_with[player].add(connection)
-
-        print "+", player.nickname, len(cls.connection_with[player]), [str(c) for c in cls.connection_with[player]]
-
-    @classmethod
-    def remove_connection_with(cls, player, connection):
-        if player not in cls.connection_with:
-            return
-
-        if connection not in cls.connection_with[player]:
-            return
-
-        cls.connection_with[player].remove(connection)
-
-        print "-", player.nickname, len(cls.connection_with[player]), [str(c) for c in cls.connection_with[player]]
-
-    def set_uid_cookie(self, uid):
-        self.write_message(json.dumps({
-            'type': 'ACCEPT NEW UID',
-            'encryptedUid': self.create_signed_value('player-uid', uid)
-        }))
-
-    def open(self):
-        s_uid = self.get_secure_cookie('player-uid')
+    def _identify_player(self, connection):
+        s_uid = connection.get_secure_cookie('player-uid')
 
         self.logger.info("Connection from %s" % self)
 
@@ -103,240 +85,39 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
 
             player = PlayerIdentity.create_new()
 
-            self.set_uid_cookie(player.uid)
+            self._set_uid_cookie(connection, player.uid)
 
-        self.add_connection_with(player, self)
+        return player
 
-        self._identity = player  # old
-        self._player = player  # new
+    def _set_uid_cookie(self, connection, uid):
+        connection.write_message({
+            'type': 'ACCEPT NEW UID',
+            'encryptedUid': connection.create_signed_value('player-uid', uid)
+        })
 
-        if player not in self.player_states:
-            player_state = PlayerState.get_initial(player)
+    def _set_nickname(self, player, new_nickname):
+        if 0 < len(new_nickname) <= 64 and '<' not in new_nickname:  # TODO: better filtering
+            player.nickname = new_nickname
 
-            self.logger.info("New player online, init their state with %s" % player_state.as_init_action())
-
-            self.player_states[player] = player_state
-        elif player in self.disconnect_timeouts:
-            self.player_reconnected(player)
-        else:
-            self.logger.debug("Got a new connection with %s" % player)
-
-    def on_close(self):
-        if not hasattr(self, '_player'):
-            self.logger.error("Socket %s doesn't have a player attached to it" % self)
-            return
-
-        player = self._player
-
-        if self in self.connection_with[player]:
-            self.connection_with[player].remove(self)
-
-            if len(self.connection_with[player]) == 0:
-                self.player_disconnected(player)
-
-    @staticmethod
-    def get_ioloop():
-        return tornado.ioloop.IOLoop.current()
-
-    @classmethod
-    def player_reconnected(cls, player):
-        cls.get_ioloop().remove_timeout(cls.disconnect_timeouts[player])
-
-        del cls.disconnect_timeouts[player]
-
-        state = cls.player_states[player]
-
-        if state.is_looking_for_game():
-            cls.mm_pool.add_player(player)
-        elif state.is_in_game():
-            state.get_game().handle_reconnect(player)
-
-    @classmethod
-    def player_disconnected(cls, player):
-        if player not in cls.player_states:
-            return
-
-        state = cls.player_states[player]
-
-        RECONNECT_TIME = 20  # TODO: make a global constant or a config var
-
-        if state.is_looking_for_game():
-            cls.mm_pool.remove_player(player)
-        elif state.is_in_game():
-            state.get_game().handle_disconnect(player, RECONNECT_TIME)
-
-        cls.disconnect_timeouts[player] = cls.get_ioloop().call_later(RECONNECT_TIME, cls.player_timed_out, player)
-
-    @classmethod
-    def player_timed_out(cls, player):
-        cls.logger.info("Player %s has timed out" % player)
-
-        state = cls.player_states[player]
-
-        if state.is_in_game():
-            state.get_game().handle_disconnect_timeout(player)
-
-        del cls.player_states[player]
-
-    # Matchmaking
-    @classmethod
-    def update_num_looking_for_game(cls, num_looking_for_game):
-        for player in cls.mm_pool.pool:
-            cls.send_msg_to_player(player, {
-                'type': 'update-looking-for-game(num)',
-                'numLooking': num_looking_for_game
-            })
-
-    @classmethod
-    def initialize_game(cls, players):
-        print "PIDORS: %s" % players
-
-        new_state = GameState.create_random([(player, player.nickname) for player in players])
-
-        new_state.add_update_handler(lambda p, msg: cls.send_msg_to_player(p, msg))
-
-        new_state.update_end_game_callback(
-            lambda identities: cls.handle_game_end(new_state, identities)
-        )
-
-        for player in players:
-            cls.running_games[player] = new_state
-
-            cls.player_states[player] = PlayerState.get_in_game(player, new_state)
-
-            cls.send_msg_to_player(player, cls.player_states[player].as_init_action())
-
-        new_state.start()
-
-    ##
-
-    def set_nickname(self, nickname):
-        if not (0 < len(nickname) <= 64):
-            return
-
-        self._identity.nickname = nickname
-
-        self.write_message(json.dumps({
+        self._send_to_player(player, {
             'type': 'CONFIRM SET NICKNAME',
-            'newNickname': nickname
-        }))
+            'newNickname': player.nickname
+        })
 
-    @classmethod
-    def remove_players_from_game(cls, game, players):
-        for player in players:
-            cls.remove_player_from_game(game, player)
+    # Player communication
 
-    @classmethod
-    def remove_player_from_game(cls, game, player):
-        if player not in cls.player_states:
-            cls.logger.error("Trying to remove unknown %s from a game" % player)
-            return
+    def _send_to_player(self, player, msg, call_handler_on_disconnect=True):
+        self.logger.debug("Try to send to %s message %s" % (player, msg))
 
-        state = cls.player_states[player]
-
-        if state.is_in_game() or state.is_after_game():
-            if game == state.get_game():
-                # TODO: when/if a voluntary leave is implemented, send a signal to the GameState to unsub the player
-
-                cls.player_states[player] = PlayerState.get_initial(player)
-
-                cls.send_msg_to_player(player, cls.player_states[player].as_init_action())
-
-    def on_message(self, msg):
-        self.logger.info("Got message %s" % msg)
-
-        msg = json.loads(msg)
-
-        if 'kind' in msg:  # new
-            player = self._player
-
-            if msg['kind'] == 'request-init':
-                self.logger.info("Got request for init form socket %s" % self)
-
-                self.send_msg_to_player(player, self.player_states[player].as_init_action())
-            elif msg['kind'] == 'act-looking-for-game(start)':
-                if not self.player_states[player].is_initial():
-                    self.logger.warn("Player %s is in %s, should be in initial" % (player, self.player_states[player].as_short_str() ))
-                    return
-
-                self.player_states[player] = PlayerState.get_looking_for_game(player, self.mm_pool)
-
-                # TODO: transition from initial to lfg instead of init into lfg!
-                self.send_msg_to_player(player, self.player_states[player].as_init_action())
-
-                self.mm_pool.add_player(player)
-            elif msg['kind'] == 'act-looking-for-game(stop)':
-                if not self.player_states[player].is_looking_for_game():
-                    self.logger.warn("Player %s isn't looking for game" % (player,))
-                    return
-
-                self.player_states[player] = PlayerState.get_initial(player)
-
-                self.send_msg_to_player(player, self.player_states[player].as_init_action())
-
-                self.mm_pool.remove_player(player)
-            elif msg['kind'] == 'act-finish-game':
-                if not self.player_states[player].is_after_game():
-                    self.logger.warn("Player %s isn't in a game that has ended" % (player,))
-                    return
-
-                self.remove_player_from_game(self.player_states[player].get_game(), player)
-        elif 'action' in msg:  # old
-            if msg['action'] == 'SET NICKNAME':
-                self.set_nickname(msg['newNickname'])
-            elif msg['action'][:4] == 'MOVE':
-                identity = self._identity
-
-                if identity not in self.running_games:
-                    logging.warning("Player %s issued a move but doesn't participate in known games")
-                    return
-
-                game = self.running_games[identity]
-
-                try:
-                    game.process_move(identity, msg)
-                except IllegalMoveException as e:
-                    logging.warning("Player %s issued an illegal move: %s" % (self, repr(e), ))
-
-                    logging.warning(game.as_dict())
-
-    @classmethod
-    def put_in_queue_for(cls, identity, update):
-        if identity not in cls.queue_for:
-            cls.queue_for[identity] = []
-
-        cls.queue_for[identity].append(update)
-
-        print "Lost messages:"
-
-        for identity, xs in cls.queue_for.iteritems():
-            print identity.nickname, ":", len(xs), " "
-
-        print
-
-    @classmethod
-    def get_working_connection_with(cls, identity):
-        cls.connection_with[identity] = set([conn for conn in cls.connection_with[identity] if conn.stream.socket is not None])
-
-        if len(cls.connection_with[identity]) == 0:
-            return None
-        else:
-            for c in cls.connection_with[identity]:
-                return c
-
-    @classmethod
-    def send_msg_to_player(cls, player, msg, call_handler_on_disconnect=True):
-        cls.logger.debug("Try to send to %s message %s" % (player, msg))
-
-        if player in cls.disconnect_timeouts or player not in cls.connection_with:
-            cls.logger.warn("No connection with for %s" % player)
+        if player in self.disconnect_timeouts or player not in self.connections_with:
+            self.logger.warn("No connection with for %s" % player)
             # cls.put_in_queue_for(player, msg)
             return
 
-        connection = cls.get_working_connection_with(player)
+        connection = self._get_working_connection_with(player)
 
         if connection is None:
-            cls.logger.warn("No good connection for %s" % player)
+            self.logger.warn("No good connection for %s" % player)
             return
 
         if 'type' not in msg:
@@ -346,26 +127,232 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
             connection.write_message(msg)
         except tornado.websocket.WebSocketClosedError:
             if call_handler_on_disconnect:
-                cls.player_disconnected(player)
+                # TODO: distinguish disconnect from failure of one of the sockets?
+                self._player_disconnected(player)
 
-    @classmethod
-    def handle_game_end(cls, game, players):
+    def handle_message(self, connection, msg):
+        self.logger.info("Got message %s" % msg)
+
+        msg = json.loads(msg)
+
+        if 'kind' in msg:  # new
+            player = self.identity_of[connection]
+
+            if msg['kind'] == 'request-init':
+                self.logger.info("Got request for init form socket %s" % self)
+
+                self._send_to_player(player, self.player_states[player].as_init_action())
+            elif msg['kind'] == 'act-looking-for-game(start)':
+                if not self.player_states[player].is_initial():
+                    self.logger.warn("Player %s is in %s, should be in initial" % (
+                    player, self.player_states[player].as_short_str()))
+                    return
+
+                self.player_states[player] = PlayerState.get_looking_for_game(player, self.mm_pool)
+
+                # TODO: transition from initial to lfg instead of init into lfg!
+                self._send_to_player(player, self.player_states[player].as_init_action())
+
+                self.mm_pool.add_player(player)
+            elif msg['kind'] == 'act-looking-for-game(stop)':
+                if not self.player_states[player].is_looking_for_game():
+                    self.logger.warn("Player %s isn't looking for game" % (player,))
+                    return
+
+                self.player_states[player] = PlayerState.get_initial(player)
+
+                self._send_to_player(player, self.player_states[player].as_init_action())
+
+                self.mm_pool.remove_player(player)
+            elif msg['kind'] == 'act-finish-game':
+                if not self.player_states[player].is_after_game():
+                    self.logger.warn("Player %s isn't in a game that has ended" % (player,))
+                    return
+
+                self._remove_player_from_game(self.player_states[player].get_game(), player)
+        elif 'action' in msg:  # old
+            identity = self.identity_of[connection]
+
+            if msg['action'] == 'SET NICKNAME':
+                self._set_nickname(identity, msg['newNickname'])
+            elif msg['action'][:4] == 'MOVE':
+                if identity not in self.running_games:
+                    logging.warning("Player %s issued a move but doesn't participate in known games")
+                    return
+
+                game = self.running_games[identity]
+
+                try:
+                    game.process_move(identity, msg)
+                except IllegalMoveException as e:
+                    logging.warning("Player %s issued an illegal move: %s" % (self, repr(e),))
+
+                    logging.warning(game.as_dict())
+
+    # Connection management
+
+    def _add_connection_with(self, player, connection):
+        if player not in self.connections_with:
+            self.connections_with[player] = set()
+
+        self.connections_with[player].add(connection)
+
+        print "+", player.nickname, len(self.connections_with[player]), [str(c) for c in self.connections_with[player]]
+
+    def _remove_connection_with(self, player, connection):
+        if player not in self.connections_with:
+            return
+
+        if connection not in self.connections_with[player]:
+            return
+
+        self.connections_with[player].remove(connection)
+
+        print "-", player.nickname, len(self.connections_with[player]), [str(c) for c in self.connections_with[player]]
+
+    def _get_working_connection_with(self, player):
+        self.connections_with[player] = set(
+            [conn for conn in self.connections_with[player] if conn.stream.socket is not None]
+        )
+
+        for connection in self.connections_with[player]:
+            return connection
+        else:
+            return None
+
+    def handle_open(self, connection):
+        player = self._identify_player(connection)
+
+        self._add_connection_with(player, connection)
+
+        self.identity_of[connection] = player
+
+        if player not in self.player_states:
+            player_state = PlayerState.get_initial(player)
+
+            self.logger.info("New player online, init their state with %s" % player_state.as_init_action())
+
+            self.player_states[player] = player_state
+        elif player in self.disconnect_timeouts:
+            self._player_reconnected(player)
+        else:
+            self.logger.debug("Got a new connection with %s" % player)
+
+    def handle_close(self, connection):
+        if connection not in self.identity_of:
+            self.logger.warn("Socket %s closed before having a player attached to it" % self)
+            return
+
+        player = self.identity_of[connection]
+
+        if connection in self.connections_with[player]:
+            self.connections_with[player].remove(connection)
+
+            if len(self.connections_with[player]) == 0:
+                self._player_disconnected(player)
+
+    # Player connection status
+
+    def _player_disconnected(self, player):
+        if player not in self.player_states:
+            return
+
+        state = self.player_states[player]
+
+        RECONNECT_TIME = 20  # TODO: make a global constant or a config var
+
+        if state.is_looking_for_game():
+            self.mm_pool.remove_player(player)
+        elif state.is_in_game():
+            state.get_game().handle_disconnect(player, RECONNECT_TIME)
+
+        self.disconnect_timeouts[player] = self.get_ioloop().call_later(RECONNECT_TIME, self._player_timed_out, player)
+
+    def _player_reconnected(self, player):
+        self.get_ioloop().remove_timeout(self.disconnect_timeouts[player])
+
+        del self.disconnect_timeouts[player]
+
+        state = self.player_states[player]
+
+        if state.is_looking_for_game():
+            self.mm_pool.add_player(player)
+        elif state.is_in_game():
+            state.get_game().handle_reconnect(player)
+
+    def _player_timed_out(self, player):
+        self.logger.info("Player %s has timed out" % player)
+
+        state = self.player_states[player]
+
+        if state.is_in_game():
+            state.get_game().handle_disconnect_timeout(player)
+
+        del self.player_states[player]
+
+    # Player-game relationship
+
+    def _remove_players_from_game(self, game, players):
+        for player in players:
+            self._remove_player_from_game(game, player)
+
+    def _remove_player_from_game(self, game, player):
+        if player not in self.player_states:
+            self.logger.error("Trying to remove unknown %s from a game" % player)
+            return
+
+        state = self.player_states[player]
+
+        if state.is_in_game() or state.is_after_game():
+            if game == state.get_game():
+                # TODO: when/if a voluntary leave is implemented, send a signal to the GameState to unsub the player
+
+                self.player_states[player] = PlayerState.get_initial(player)
+
+                self._send_to_player(player, self.player_states[player].as_init_action())
+
+    def _handle_game_end(self, game, players):
+        for player in game.order_disconnected:
+            player.count_leave()
+
+        for player in game.order_won:
+            player.count_win()
+
+        loser = game.end_summary['loser']
+
+        if loser is not None:
+            loser.count_loss()
+
         for p in players:
-            loser = game.end_summary['loser']
-
-            if loser is not None and p == loser:
-                p.count_loss()
-            elif p in game.order_disconnected:
-                p.count_leave()
-            elif p in game.order_won:
-                p.count_win()
-
             if p not in game.order_disconnected:
-                cls.player_states[p] = PlayerState.get_after_game(p, game)
+                self.player_states[p] = PlayerState.get_after_game(p, game)
 
-                cls.send_msg_to_player(p, cls.player_states[p].as_init_action())
+                self._send_to_player(p, self.player_states[p].as_init_action())
 
-        cls.get_ioloop().call_later(20, lambda: cls.remove_players_from_game(game, players))
+        self.get_ioloop().call_later(20, lambda: self._remove_players_from_game(game, players))
+
+
+class GameSocketHandler(tornado.websocket.WebSocketHandler):
+    logger = logging.getLogger('durack/server')
+
+    server = DurackGameServer()
+
+    def check_origin(self, origin):
+        # TODO: serve client page through Tornado so this can be removed
+        return True
+
+    def get_compression_options(self):
+        # Non-None enables compression with default options.
+        return {}
+
+    def open(self):
+        self.server.handle_open(self)
+
+    def on_close(self):
+        self.server.handle_close(self)
+
+    def on_message(self, msg):
+        self.server.handle_message(self, msg)
 
     def data_received(self, chunk):
         pass
