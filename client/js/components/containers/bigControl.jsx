@@ -34,9 +34,11 @@ class _BigControl extends React.Component {
                 );
             }
         }
-        else if((gameState.currentPhase === 'init' && gameState.iSpotlight === 0) ||
-            (!gameState.optedEndMove && gameState.currentPhase === 'follow'
-                && gameState.iSpotlight !== 0 && this.haveCardsToPut(gameState))) {
+        else if((
+                gameState.currentPhase === 'init' && gameState.iSpotlight === 0
+                    && gameState.tableStacks.length !== 0) ||
+                (!gameState.optedEndMove && gameState.currentPhase === 'follow'
+                    && gameState.iSpotlight !== 0 && this.haveCardsToPut(gameState))) {
             // TODO: narrow down the set of states where this button shows up in follow
 
             return (
