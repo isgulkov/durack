@@ -15,7 +15,7 @@ class DurackGameServer:
     def __init__(self):
         self.player_states = {}  # TODO: type hint this
 
-        self.identity_of = {}
+        self.identity_of = {}  # TODO: ensure proper cleanup
         self.connections_with = {}
 
         self.disconnect_timeouts = {}
@@ -212,6 +212,7 @@ class DurackGameServer:
             self.connections_with[player] = set()
 
         self.connections_with[player].add(connection)
+        self.identity_of[connection] = player
 
         print "+", player.nickname, len(self.connections_with[player]), [str(c) for c in self.connections_with[player]]
 
@@ -223,6 +224,7 @@ class DurackGameServer:
             return
 
         self.connections_with[player].remove(connection)
+        del self.identity_of[connection]
 
         print "-", player.nickname, len(self.connections_with[player]), [str(c) for c in self.connections_with[player]]
 
@@ -240,8 +242,6 @@ class DurackGameServer:
         player = self._identify_player(connection)
 
         self._add_connection_with(player, connection)
-
-        self.identity_of[connection] = player
 
         if player not in self.player_states:
             player_state = PlayerState.get_initial(player)
@@ -263,6 +263,7 @@ class DurackGameServer:
 
         if connection in self.connections_with[player]:
             self.connections_with[player].remove(connection)
+            del self.identity_of[connection]
 
             if len(self.connections_with[player]) == 0:
                 self._player_disconnected(player)
