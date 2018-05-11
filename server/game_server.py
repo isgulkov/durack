@@ -12,6 +12,9 @@ from player_state import PlayerState
 class DurackGameServer:
     logger = logging.getLogger('durack/server')
 
+    # The timeout a disconnected player will have to reconnect
+    RECONNECT_TIME = 20
+
     def __init__(self):
         self.player_states = {}  # TODO: type hint this
 
@@ -289,14 +292,12 @@ class DurackGameServer:
 
         state = self.player_states[player]
 
-        RECONNECT_TIME = 20  # TODO: make a global constant or a config var
-
         if state.is_looking_for_game():
             self.mm_pool.remove_player(player)
         elif state.is_in_game():
-            state.get_game().handle_disconnect(player, RECONNECT_TIME)
+            state.get_game().handle_disconnect(player, self.RECONNECT_TIME)
 
-        self.disconnect_timeouts[player] = self.get_ioloop().call_later(RECONNECT_TIME, self._player_timed_out, player)
+        self.disconnect_timeouts[player] = self.get_ioloop().call_later(self.RECONNECT_TIME, self._player_timed_out, player)
 
     def _player_reconnected(self, player):
         self.get_ioloop().remove_timeout(self.disconnect_timeouts[player])
