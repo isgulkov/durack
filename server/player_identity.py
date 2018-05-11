@@ -133,6 +133,7 @@ class PlayerIdentity(object):
         self._dump()
 
     def count_leave(self):
+        self._num_played += 1
         self._num_left += 1
 
         self._dump()
