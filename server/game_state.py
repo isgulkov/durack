@@ -691,13 +691,26 @@ class GameState:
 
         if self.phase == 'follow':
             self._move_timer.bump(self.BUMP_TIME)
-        elif player_uid.no_auto_end:
-            # TODO: first and for now only time we're breaking through the opacity of player.
-            # TODO: either get rid of this or make full use out of it
-            if self._move_timer.delay > self.END_INIT_TIME:
-                self._move_timer.reset(self.END_INIT_TIME)
-        elif not self._put_possible(player_uid):
-            self._end_init_phase()
+        elif self.phase == 'init':
+            if player_uid.no_auto_end:
+                # TODO:  ^^^^^^^^^^^^
+                # TODO: first and for now only time we're breaking through the opacity of player.
+                # TODO: either get rid of this or make full use out of it
+
+                if len(self.player_hands[player_uid]) == 0 or \
+                    len(self.table_stacks) == len(self.player_hands[self._get_defending_player()]) or \
+                    len(self.table_stacks) == 4:
+                    # End even with auto-end disabled in certain cases where end is obvious to all players:
+                    # - the attacker is out of cards;
+                    # - the defendant is out of cards;
+                    # - all four cards of a rank are on the table.
+
+                    self._end_init_phase()
+                else:
+                    if self._move_timer.delay > self.END_INIT_TIME:
+                        self._move_timer.reset(self.END_INIT_TIME)
+            elif not self._put_possible(player_uid):
+                self._end_init_phase()
 
         self._reset_all_end_move_votes()
 
