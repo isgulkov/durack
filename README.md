@@ -19,7 +19,7 @@ npm install ./client
 Bundle the client app with `parcel`:
 
 ```
-parcel build ./client/index.html
+node ./node_modules/parcel-bundler/bin/cli.js build ./client/index.html
 ```
 
 ## Running
