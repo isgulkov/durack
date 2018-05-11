@@ -2,6 +2,7 @@ import logging
 import json
 
 from tornado.ioloop import IOLoop
+import tornado.websocket
 
 from mm_pool import MatchmakingPool
 from game_state import GameState, IllegalMoveException
