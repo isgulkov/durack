@@ -28,6 +28,11 @@ div.tooltip {
     font-size: 0.8em;
 }
 
+div.paragraph {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
 .children-default-cursor div {
     cursor: default;
 }

@@ -32,6 +32,12 @@ let sendActionsMiddleware = store => next => action => {
             minPlayers: action.minPlayers
         }
     }
+    else if(action.type === 'send-set-no-auto-end') {
+        msg = {
+            kind: 'set-no-auto-end',
+            newVal: action.newVal
+        }
+    }
     else if(action.type === 'SEND HAND SELECT') {
         const gameState = store.getState().game;
 

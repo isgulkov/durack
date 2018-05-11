@@ -68,6 +68,17 @@ const fMmSettings = combineReducers({
     }
 });
 
+const fNoAutoEnd = (state=false, action) => {
+    if(action.type === 'init-player(initial)') {
+        return action.noAutoEnd;
+    }
+    else if(action.type === 'set-no-auto-end-confirm') {
+        return action.newVal;
+    }
+
+    return state;
+};
+
 const fCurrentNickname = (state="", action) => {
     if(action.type === 'init-player(initial)') {
         return action.nickname;
@@ -120,6 +131,7 @@ export const fMenu = combineReducers({
     status: fStatus,
     numLooking: fNumLooking,
     mmSettings: fMmSettings,
+    noAutoEnd: fNoAutoEnd,
     currentNickname: fCurrentNickname,
     changingNickname: fChangingNickname,
     playerStats: fPlayerStats,

@@ -691,9 +691,13 @@ class GameState:
 
         if self.phase == 'follow':
             self._move_timer.bump(self.BUMP_TIME)
-        else:
+        elif player_uid.no_auto_end:
+            # TODO: first and for now only time we're breaking through the opacity of player.
+            # TODO: either get rid of this or make full use out of it
             if self._move_timer.delay > self.END_INIT_TIME:
                 self._move_timer.reset(self.END_INIT_TIME)
+        elif not self._put_possible(player_uid):
+            self._end_init_phase()
 
         self._reset_all_end_move_votes()
 

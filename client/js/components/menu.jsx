@@ -2,6 +2,7 @@ import React from "react";
 
 import { FindGameBtn, StopLookingBtn } from './containers/findGameButtons';
 import { MatchmakingSettingsBlock } from "./containers/mmSettingsBlock";
+import { GameSettingsBlock } from "./containers/gameSettingsBlock";
 import { ChangeNameBlock } from './containers/changeNameBlock';
 import { PlayerStatsBlock } from "./playerStatsBlock";
 
@@ -79,6 +80,7 @@ class Menu extends React.Component {
                 <React.Fragment>
                     <FindGameBlock isLooking={false} />
                     <MatchmakingSettingsBlock currentSettings={menuState.mmSettings} />
+                    <GameSettingsBlock noAutoEnd={menuState.noAutoEnd} />
                     <ChangeNameBlock isChangingNickname={menuState.changingNickname}
                                      nickname={menuState.currentNickname} />
                     <PlayerStatsBlock playerStats={menuState.playerStats} />

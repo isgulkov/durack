@@ -11,7 +11,8 @@ class PlayerIdentity(object):
     instances = {}
 
     def __init__(self, uid, nickname, num_played=0, num_won=0, num_left=0,
-                 mm_deck='dont-care', mm_min_players=2, is_new=False):
+                 mm_deck='dont-care', mm_min_players=2, no_auto_end=False,
+                 is_new=False):
         self._uid = uid
         self._nickname = nickname
 
@@ -21,6 +22,8 @@ class PlayerIdentity(object):
 
         self._mm_deck = mm_deck
         self._mm_min_players = mm_min_players
+
+        self._no_auto_end = no_auto_end
 
         # TODO: do something to prevent leaks
         self.instances[uid] = self
@@ -66,11 +69,15 @@ class PlayerIdentity(object):
 
             'mm_deck': self._mm_deck,
             'mm_min_players': self._mm_min_players,
+
+            'no_auto_end': self._no_auto_end
         }
 
     @property
     def uid(self):
         return self._uid
+
+    # Settings
 
     @property
     def nickname(self):
@@ -108,6 +115,17 @@ class PlayerIdentity(object):
 
         self._mm_min_players = v
         self._dump()
+
+    @property
+    def no_auto_end(self):
+        return self._no_auto_end
+
+    @no_auto_end.setter
+    def no_auto_end(self, v):
+        self._no_auto_end = v
+        self._dump()
+
+    # Stats
 
     @property
     def num_played(self):
@@ -165,9 +183,11 @@ if __name__ == '__main__':
     for d in db:
         p = PlayerIdentity(**d)
 
-        print u"{:<40} {:<20} {:>4} {:>4} {:>4} - {:<10} {}".format(
+        print u"{:<40} {:<20} {:>4} {:>4} {:>4} - {:<10} {}  {}".format(
             p.uid,
             p.nickname,
             p.num_played, p.num_won, p.num_left,
-            p.mm_deck, p.mm_min_players
+            p.mm_deck,
+            p.mm_min_players,
+            p.no_auto_end and 'Y' or 'N'
         ).encode('utf-8')

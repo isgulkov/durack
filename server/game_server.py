@@ -112,6 +112,17 @@ class DurackGameServer:
         except ValueError as e:
             self.logger.warn("While setting one of mm settings: %s" % e.message)
 
+    def _set_game_settings(self, player, no_auto_end=None):
+        if no_auto_end is None:
+            raise ValueError()
+
+        player.no_auto_end = no_auto_end
+
+        self._send_to_player(player, {
+            'type': 'set-no-auto-end-confirm',
+            'newVal': player.no_auto_end
+        })
+
     # Player communication
 
     def _send_to_player(self, player, msg, call_handler_on_disconnect=True):
@@ -185,6 +196,8 @@ class DurackGameServer:
                 self._set_mm_settings(player, deck=msg['deck'])
             elif msg['kind'] == 'set-mm-min-players':
                 self._set_mm_settings(player, min_players=msg['minPlayers'])
+            elif msg['kind'] == 'set-no-auto-end':
+                self._set_game_settings(player, no_auto_end=msg['newVal'])
             elif msg['kind'][:5] == 'move-':
                 if player not in self.player_states:
                     logging.warning("Unknown player %s issued a move" % player)

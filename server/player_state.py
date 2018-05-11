@@ -81,7 +81,8 @@ class PlayerState:
                     'numPlayed': self.player.num_played,
                     'numWon': self.player.num_won,
                     'numLeft': self.player.num_left
-                }
+                },
+                'noAutoEnd': self.player.no_auto_end
             }
         elif self.root == self.LookingForGame:
             action = {

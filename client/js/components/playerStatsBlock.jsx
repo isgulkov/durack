@@ -4,12 +4,6 @@ class PlayerStatsBlock extends React.Component {
     render() {
         const playerStats = this.props.playerStats;
 
-        // const playerStats = {
-        //     numPlayed: 101,
-        //     numWon: 76,
-        //     numLeft: 8
-        // };
-
         if(playerStats === null) {
             return null;
         }
@@ -40,8 +34,6 @@ class PlayerStatsBlock extends React.Component {
                 <tbody>
                     {
                         tableRows.map(([left, right], i) => {
-                            console.log(left, right);
-
                             return (
                                 <tr key={i}>
                                     <td style={tdStyle}>{left}</td>
