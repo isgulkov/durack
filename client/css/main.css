@@ -1,4 +1,19 @@
 
+a.js {
+    text-decoration: none;
+    border-bottom: 1px blue dotted;
+}
+
+a.js:visited {
+    color: blue;
+}
+
+a.js.sel-var {
+    color: black;
+    cursor: default;
+    border-bottom: 1px black solid;
+}
+
 .children-default-cursor div {
     cursor: default;
 }

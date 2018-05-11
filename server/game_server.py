@@ -42,7 +42,7 @@ class DurackGameServer:
         new_state.add_update_handler(lambda p, msg: self._send_to_player(p, msg))
 
         new_state.update_end_game_callback(
-            lambda players: self._handle_game_end(new_state, players)
+            lambda px: self._handle_game_end(new_state, px)
         )
 
         for player in players:

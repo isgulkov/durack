@@ -1,6 +1,7 @@
 import React from "react";
 
 import { FindGameBtn, StopLookingBtn } from './containers/findGameButtons';
+import { MatchmakingSettingsBlock } from "./containers/mmSettingsBlock";
 import { ChangeNameBlock } from './containers/changeNameBlock';
 import { EndGameBlock } from "./containers/endGameBlock";
 
@@ -30,6 +31,8 @@ class FindGameBlock extends React.Component {
 
 class Menu extends React.Component {
     getContainerStyle() {
+        // TODO: use a separate "inGame" prop for this
+
         const status = this.props.state.status;
 
         const TOP_OFFSET = 200;
@@ -57,7 +60,7 @@ class Menu extends React.Component {
     static getMenuStyle() {
         return {
             'margin': '0 auto',
-            'maxWidth': '300px',
+            // 'maxWidth': '300px',
             'padding': '25px',
             'background': 'white',
             'textAlign': 'center'
@@ -71,28 +74,26 @@ class Menu extends React.Component {
             return null;
         }
 
-        let findGameBlock = null;
+        let menuInnerBlock = null;
 
-        if(menuState.status === 'initial' || menuState.status === 'looking') {
-            findGameBlock = (
-                <FindGameBlock isLooking={menuState.status === 'looking'}
+        if(menuState.status === 'initial') {
+            menuInnerBlock = (
+                <React.Fragment>
+                    <FindGameBlock isLooking={false} />
+                    <MatchmakingSettingsBlock inMMSettings={false} />
+                    <ChangeNameBlock isChangingNickname={menuState.changingNickname}
+                                     nickname={menuState.currentNickname} />
+                </React.Fragment>
+            );
+        }
+        else if(menuState.status === 'looking') {
+            menuInnerBlock = (
+                <FindGameBlock isLooking={true}
                                numLooking={menuState.numLooking} />
             );
         }
-
-        let changeNameBlock = null;
-
-        if(menuState.status === 'initial') {
-            changeNameBlock = (
-                <ChangeNameBlock isChangingNickname={menuState.changingNickname}
-                                 nickname={menuState.currentNickname} />
-            );
-        }
-
-        let endGameBlock = null;
-
-        if(menuState.status === 'game end') {
-            endGameBlock = (
+        else if(menuState.status === 'game end') {
+            menuInnerBlock = (
                 <EndGameBlock endSummary={menuState.endSummary} />
             );
         }
@@ -100,9 +101,7 @@ class Menu extends React.Component {
         return (
             <div style={this.getContainerStyle()}>
                 <div style={Menu.getMenuStyle()}>
-                    { findGameBlock }
-                    { changeNameBlock }
-                    { endGameBlock }
+                    { menuInnerBlock }
                 </div>
             </div>
         );

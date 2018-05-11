@@ -23,8 +23,6 @@ class PlayerState:
 
     @classmethod
     def get_initial(cls, player):
-        # TODO: is player needed here?
-
         return PlayerState(player, cls.Initial)
 
     @classmethod

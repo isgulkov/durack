@@ -4,12 +4,13 @@ import { connect } from 'react-redux';
 class _FindGameBtn extends React.Component {
     render() {
         return (
-            <a href="#"
+            <a className='js'
+               href="#"
                onClick={e => {
                    e.preventDefault();
                    this.props.sendFindGame();
                }}>
-                Найти игру
+                <strong>Найти игру</strong>
             </a>
         );
     }
@@ -18,12 +19,13 @@ class _FindGameBtn extends React.Component {
 class _StopLookingBtn extends React.Component {
     render() {
         return (
-            <a href="#"
+            <a className='js'
+               href="#"
                onClick={e => {
                    e.preventDefault();
                    this.props.sendStopLooking();
                }}>
-                Отмена
+                <strong>Отмена</strong>
             </a>
         );
     }

@@ -58,7 +58,9 @@ class _ChangeNameBlock extends React.Component {
                                }
                            }}
                     />
-                    <a href="#" onClick={e => this.handleSubmit(e)}>OK</a>
+                    <a className='js'
+                       href="#"
+                       onClick={e => this.handleSubmit(e)}>OK</a>
                 </p>
             );
         }
@@ -66,10 +68,12 @@ class _ChangeNameBlock extends React.Component {
             return (
                 <p>
                     Ваше имя: <em>{this.props.currentNickname}</em>&nbsp;
-                    <a href="#" onClick={e => {
-                        e.preventDefault();
-                        this.props.sendChangeNickname();
-                    }} >(изменить)</a>
+                    <a className='js'
+                       href="#"
+                       onClick={e => {
+                           e.preventDefault();
+                           this.props.sendChangeNickname();
+                       }}>(изменить)</a>
                 </p>
             );
         }
