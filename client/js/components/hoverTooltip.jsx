@@ -19,12 +19,13 @@ class HoverTooltip extends React.Component {
                          this.state.position !== null ? {
                              'display': 'block',
                              'left': (this.state.position[0] + 5) + 'px',
-                             'top': (this.state.position[1] + 5) + 'px'
+                             'top': (this.state.position[1] + 10) + 'px'
                          } : {}
                      }>
                     { this.props.helpText }
                 </div>
-                <span onMouseMove={e => this.setState({position: [e.clientX, e.clientY]})}
+                <span className={'noselect'}
+                      onMouseMove={e => this.setState({position: [e.clientX, e.clientY]})}
                       onMouseLeave={() => this.setState({position: null})}>
                     { this.props.children }
                 </span>
