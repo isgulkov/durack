@@ -29,7 +29,7 @@ let sendActionsMiddleware = store => next => action => {
         }
         else {
             msg = {
-                action: 'MOVE PUT',
+                kind: 'move-put',
                 card: action.card
             };
         }
@@ -39,7 +39,7 @@ let sendActionsMiddleware = store => next => action => {
 
         if(gameState.defendMoveCard) {
             msg = {
-                action: 'MOVE DEFEND',
+                kind: 'move-defend',
                 card: gameState.defendMoveCard,
                 iStack: action.iStack
             };
@@ -51,12 +51,12 @@ let sendActionsMiddleware = store => next => action => {
     }
     else if(action.type === 'SEND TAKE') {
         msg = {
-            action: 'MOVE TAKE'
+            kind: 'move-take'
         };
     }
     else if(action.type === 'SEND END MOVE') {
         msg = {
-            action: 'MOVE END'
+            kind: 'move-end'
         };
 
         store.dispatch({

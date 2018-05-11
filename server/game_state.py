@@ -615,14 +615,14 @@ class GameState:
 
             return
 
-        if move['action'] == 'MOVE PUT':
+        if move['kind'] == 'move-put':
             card = Card.from_dict(move['card'])
 
             if not self._is_valid_put_move(player_uid, card):
                 raise IllegalMoveException(move, self.as_dict())
 
             self._apply_put_move(player_uid, card)
-        elif move['action'] == 'MOVE DEFEND':
+        elif move['kind'] == 'move-defend':
             card = Card.from_dict(move['card'])
             i_stack = move['iStack']
 
@@ -630,12 +630,12 @@ class GameState:
                 raise IllegalMoveException(move, self.as_dict())
 
             self._apply_defend_move(player_uid, card, i_stack)
-        elif move['action'] == 'MOVE TAKE':
+        elif move['kind'] == 'move-take':
             if not self._is_valid_take_move(player_uid):
                 raise IllegalMoveException(move, self.as_dict())
 
             self._apply_take_move(player_uid)
-        elif move['action'] == 'MOVE END':
+        elif move['kind'] == 'move-end':
             i_player = self._index_of_player(player_uid)
 
             if self.phase == 'init' and self.spotlight == player_uid and len(self.table_stacks) != 0:

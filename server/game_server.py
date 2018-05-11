@@ -12,12 +12,10 @@ class DurackGameServer:
     logger = logging.getLogger('durack/server')
 
     def __init__(self):
-        self.running_games = {}  # TODO: old -- remove when unnecessary
         self.player_states = {}  # TODO: type hint this
 
         self.identity_of = {}
         self.connections_with = {}
-        self.queue_for = {}  # TODO: remove?
 
         self.disconnect_timeouts = {}
 
@@ -47,8 +45,6 @@ class DurackGameServer:
         )
 
         for player in players:
-            self.running_games[player] = new_state  # TODO: old -- remove when unnecessary
-
             self.player_states[player] = PlayerState.get_in_game(player, new_state)
 
             self._send_to_player(player, self.player_states[player].as_init_action())
@@ -60,7 +56,7 @@ class DurackGameServer:
     def _identify_player(self, connection):
         s_uid = connection.get_secure_cookie('player-uid')
 
-        self.logger.info("Connection from %s" % self)
+        self.logger.info("Connection from %s" % connection)
 
         player = None
 
@@ -100,7 +96,6 @@ class DurackGameServer:
 
         if player in self.disconnect_timeouts or player not in self.connections_with:
             self.logger.warn("No connection with for %s" % player)
-            # cls.put_in_queue_for(player, msg)
             return
 
         connection = self._get_working_connection_with(player)
@@ -124,7 +119,7 @@ class DurackGameServer:
 
         msg = json.loads(msg)
 
-        if 'kind' in msg:  # new
+        if 'kind' in msg:
             player = self.identity_of[connection]
 
             if msg['kind'] == 'request-init':
@@ -161,18 +156,21 @@ class DurackGameServer:
                 self._remove_player_from_game(self.player_states[player].get_game(), player)
             elif msg['kind'] == 'set-nickname':
                 self._set_nickname(player, msg['newNickname'])
-        elif 'action' in msg:  # old
-            identity = self.identity_of[connection]
-
-            if msg['action'][:4] == 'MOVE':
-                if identity not in self.running_games:
-                    logging.warning("Player %s issued a move but doesn't participate in known games")
+            elif msg['kind'][:5] == 'move-':
+                if player not in self.player_states:
+                    logging.warning("Unknown player %s issued a move" % player)
                     return
 
-                game = self.running_games[identity]
+                state = self.player_states[player]
+
+                if not state.is_in_game():
+                    logging.warning("Player %s issued a move while in %s" % (player, state))
+                    return
+
+                game = state.get_game()
 
                 try:
-                    game.process_move(identity, msg)
+                    game.process_move(player, msg)
                 except IllegalMoveException as e:
                     logging.warning("Player %s issued an illegal move: %s" % (self, repr(e),))
 
