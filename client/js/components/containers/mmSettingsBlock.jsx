@@ -55,12 +55,7 @@ class _MatchmakingSettingsBlock extends React.Component {
     }
 
     render() {
-        // const currentSettings = this.props.currentSettings;
-
-        const currentSettings = {
-            'deck': '52-card',
-            'minPlayers': 2
-        };
+        const currentSettings = this.props.currentSettings;
 
         return (
             <div>
@@ -91,13 +86,13 @@ export const MatchmakingSettingsBlock = connect(
     {
         sendChangeDeck: (newDeck) => {
             return {
-                type: 'send-change-mm-deck',
-                newDeck: newDeck
+                type: 'send-set-mm-deck',
+                deck: newDeck
             };
         },
         sendChangeMinPlayers: (minPlayers) => {
             return {
-                type: 'send-change-mm-min-players',
+                type: 'send-set-mm-min-players',
                 minPlayers: minPlayers
             };
         }

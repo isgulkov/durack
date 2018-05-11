@@ -2,6 +2,8 @@
 let sendActionsMiddleware = store => next => action => {
     let msg = null;
 
+    // TODO: rearrange in order of descending frequency
+
     if(action.type === 'SEND FIND GAME') {
         msg = {
             kind: 'act-looking-for-game(start)'
@@ -16,6 +18,18 @@ let sendActionsMiddleware = store => next => action => {
         msg = {
             kind: 'set-nickname',
             newNickname: action.newNickname
+        }
+    }
+    else if(action.type === 'send-set-mm-deck') {
+        msg = {
+            kind: 'set-mm-deck',
+            deck: action.deck
+        }
+    }
+    else if(action.type === 'send-set-mm-min-players') {
+        msg = {
+            kind: 'set-mm-min-players',
+            minPlayers: action.minPlayers
         }
     }
     else if(action.type === 'SEND HAND SELECT') {

@@ -74,7 +74,9 @@ class PlayerState:
     def as_init_action(self):
         if self.root == self.Initial:
             action = {
-                'type': 'init-player(initial)'
+                'type': 'init-player(initial)',
+                'mmDeck': self.player.mm_deck,
+                'mmMinPlayers': self.player.mm_min_players
             }
         elif self.root == self.LookingForGame:
             action = {

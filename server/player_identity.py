@@ -2,17 +2,23 @@ import uuid
 
 from tinydb import TinyDB, Query
 
+from game_state import GAME_DECK_MODES
+
 
 class PlayerIdentity(object):
     db = TinyDB('db.json')
 
-    def __init__(self, uid, nickname, num_played, num_won, is_new=False):
+    def __init__(self, uid, nickname, num_played=0, num_won=0,
+                 mm_deck='dont-care', mm_min_players=2, is_new=False):
         self._uid = uid
         self._nickname = nickname
         self._num_played = num_played
         self._num_won = num_won
+        self._mm_deck = mm_deck
+        self._mm_min_players = mm_min_players
 
         if is_new:
+            # TODO: get rid of this param -- like, always, try to get, then insert if nothing
             self.db.insert(self.as_dict())
 
     def __eq__(self, other):
@@ -62,6 +68,31 @@ class PlayerIdentity(object):
         print "got changed to", self._nickname
 
         self._dump()
+
+    MM_DECK_VALUES = ('dont-care', ) + GAME_DECK_MODES
+    MM_MIN_PLAYERS_VALUES = (2, 3, 4, 5, 6, )
+
+    @property
+    def mm_deck(self):
+        return self._mm_deck
+
+    @mm_deck.setter
+    def mm_deck(self, v):
+        if v not in self.MM_DECK_VALUES:
+            raise ValueError("Illegal value %s for mm deck" % v)
+
+        self._mm_deck = v
+
+    @property
+    def mm_min_players(self):
+        return self._mm_min_players
+
+    @mm_min_players.setter
+    def mm_min_players(self, v):
+        if v not in self.MM_MIN_PLAYERS_VALUES:
+            raise ValueError("Illegal value %s for mm min players" % v)
+
+        self._mm_min_players = v
 
     def count_win(self):
         self._num_played += 1

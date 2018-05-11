@@ -35,8 +35,8 @@ class DurackGameServer:
                 'numLooking': num_looking_for_game
             })
 
-    def _initialize_game(self, players):
-        new_state = GameState.create_random([(player, player.nickname) for player in players])
+    def _initialize_game(self, players, **game_settings):
+        new_state = GameState.create_random([(player, player.nickname) for player in players], **game_settings)
 
         # TODO: make a separate method "send state delta" so that game only deals in state deltas, not full actions
         new_state.add_update_handler(lambda p, msg: self._send_to_player(p, msg))
@@ -90,6 +90,28 @@ class DurackGameServer:
             'newNickname': player.nickname
         })
 
+    def _set_mm_settings(self, player, deck=None, min_players=None):
+        if (deck is None) == (min_players is None):
+            raise ValueError()
+
+        try:
+            if deck is not None:
+                player.mm_deck = deck
+
+                self._send_to_player(player, {
+                    'type': 'set-mm-deck-confirm',
+                    'deck': player.mm_deck
+                })
+            elif min_players is not None:
+                player.mm_min_players = min_players
+
+                self._send_to_player(player, {
+                    'type': 'set-mm-min-players-confirm',
+                    'minPlayers': player.mm_min_players
+                })
+        except ValueError as e:
+            self.logger.warn("While setting one of mm settings: %s" % e.message)
+
     # Player communication
 
     def _send_to_player(self, player, msg, call_handler_on_disconnect=True):
@@ -122,6 +144,8 @@ class DurackGameServer:
 
         if 'kind' in msg:
             player = self.identity_of[connection]
+
+            # TODO: rearrange in order of descending frequency
 
             if msg['kind'] == 'request-init':
                 self.logger.info("Got request for init form socket %s" % self)
@@ -157,6 +181,10 @@ class DurackGameServer:
                 self._remove_player_from_game(self.player_states[player].get_game(), player)
             elif msg['kind'] == 'set-nickname':
                 self._set_nickname(player, msg['newNickname'])
+            elif msg['kind'] == 'set-mm-deck':
+                self._set_mm_settings(player, deck=msg['deck'])
+            elif msg['kind'] == 'set-mm-min-players':
+                self._set_mm_settings(player, min_players=msg['minPlayers'])
             elif msg['kind'][:5] == 'move-':
                 if player not in self.player_states:
                     logging.warning("Unknown player %s issued a move" % player)

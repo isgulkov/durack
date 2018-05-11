@@ -80,7 +80,7 @@ class Menu extends React.Component {
             menuInnerBlock = (
                 <React.Fragment>
                     <FindGameBlock isLooking={false} />
-                    <MatchmakingSettingsBlock inMMSettings={false} />
+                    <MatchmakingSettingsBlock currentSettings={menuState.mmSettings} />
                     <ChangeNameBlock isChangingNickname={menuState.changingNickname}
                                      nickname={menuState.currentNickname} />
                 </React.Fragment>

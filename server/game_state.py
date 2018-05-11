@@ -54,19 +54,29 @@ class IllegalMoveException(ValueError):
         return "IllegalMoveException[move `%s` in state `%s`)" % (self.move, self.state_repr, )
 
 
+GAME_DECK_MODES = ('36-card', '52-card', '52-fast', )
+
+
 class Card:
     suits = ('hearts', 'diamonds', 'clubs', 'spades')
     ranks = ('2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A')
 
     @classmethod
-    def all_cards(cls):
+    def all_cards(cls, deck_size=52):
+        if deck_size == 52:
+            used_ranks = cls.ranks
+        elif deck_size == 36:
+            used_ranks = cls.ranks[cls.ranks.index('6'):]
+        else:
+            raise ValueError("Decks of size %d are unsupported, only 36 and 52" % deck_size)
+
         for suit in cls.suits:
-            for rank in cls.ranks:
+            for rank in used_ranks:
                 yield Card(suit, rank)
 
     @classmethod
-    def get_shuffled_deck(cls):
-        return urandom_shuffled(cls.all_cards())
+    def get_shuffled_deck(cls, size=52):
+        return urandom_shuffled(cls.all_cards(deck_size=size))
 
     def __init__(self, suit, rank):
         if suit not in self.suits:
@@ -139,7 +149,7 @@ class GameState:
 
         self.table_stacks = table_stacks
 
-        self.leftover_deck = leftover_deck[:2]  ## TODO: remove after testing game end
+        self.leftover_deck = leftover_deck
         self.played_deck = played_deck
 
         self.bottom_card = bottom_card
@@ -156,12 +166,12 @@ class GameState:
         self.order_won = []
 
     @classmethod
-    def create_random(cls, players):
+    def create_random(cls, players, deck='52-card'):
         """
         Return an initial game state with the deck shuffled and players in random order.
         """
 
-        deck = Card.get_shuffled_deck()
+        deck = Card.get_shuffled_deck(size=int(deck[:2]))
 
         bottom_card = deck[0]
 
@@ -169,6 +179,9 @@ class GameState:
 
         for uid, name in players:
             player_hands[uid] = set(deck.pop() for _ in xrange(6))
+
+        if deck[-4:] == 'fast':
+            deck = deck[:len(players)]
 
         ordered_players = list(players)
         urandom_shuffle_inplace(ordered_players)

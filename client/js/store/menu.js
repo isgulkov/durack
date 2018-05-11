@@ -45,6 +45,29 @@ const fNumLooking = (state="?", action) => {
     return state;
 };
 
+const fMmSettings = combineReducers({
+    deck: (state='dont-care', action) => {
+        if(action.type === 'init-player(initial)') {
+            return action.mmDeck;
+        }
+        else if(action.type === 'set-mm-deck-confirm') {
+            return action.deck;
+        }
+
+        return state;
+    },
+    minPlayers: (state=2, action) => {
+        if(action.type === 'init-player(initial)') {
+            return action.mmMinPlayers;
+        }
+        else if(action.type === 'set-mm-min-players-confirm') {
+            return action.minPlayers;
+        }
+
+        return state;
+    }
+});
+
 const fCurrentNickname = (state="", action) => {
     if(action.type === 'init-player(initial)') {
         return action.nickname;
@@ -88,6 +111,7 @@ export const fMenu = combineReducers({
     isDisplayed: fIsDisplayed,
     status: fStatus,
     numLooking: fNumLooking,
+    mmSettings: fMmSettings,
     currentNickname: fCurrentNickname,
     changingNickname: fChangingNickname,
     endSummary: fEndSummary
