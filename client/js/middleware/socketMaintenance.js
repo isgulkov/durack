@@ -1,6 +1,8 @@
 
+import { GAME_SOCKET_PORT } from "../config";
+
 const createAndDispatchSocket = (uiStore) => {
-    const socket = new WebSocket('ws://' + location.hostname + ':8888/durack_game');
+    const socket = new WebSocket('ws://' + location.hostname + ':' + GAME_SOCKET_PORT + '/durack_game');
 
     socket.onopen = () => {
         uiStore.dispatch({
